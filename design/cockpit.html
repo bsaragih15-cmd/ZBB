@@ -137,6 +137,13 @@
   .hide { display: none; }
   .caret { display: inline-block; width: 12px; color: var(--muted); transition: transform .12s; }
   .caret.open { transform: rotate(90deg); color: var(--teal); }
+  /* waterfall */
+  .wf { display: flex; align-items: flex-end; gap: 18px; height: 300px; padding: 8px 8px 0; }
+  .wfcol { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; min-width: 0; }
+  .wfcol .bar2 { width: 100%; border-radius: 5px 5px 0 0; }
+  .wfcol .val { font-family: var(--mono); font-size: 11px; font-weight: 700; text-align: center; margin-bottom: 5px; }
+  .wfcol .cap { font-family: var(--mono); font-size: 9.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); text-align: center; margin-top: 7px; line-height: 1.3; }
+  .wfaxis { border-top: 1px dashed var(--border); margin: 0 8px; }
 </style>
 </head>
 <body>
@@ -146,7 +153,7 @@
       <button class="tab active" data-tab="1">1 · Cross-asset</button>
       <button class="tab" data-tab="2">2 · L3–L4 per asset</button>
       <button class="tab" data-tab="3">3 · L5 per asset</button>
-      <button class="tab disabled">Cost-out bridge</button>
+      <button class="tab" data-tab="4">Cost-out bridge</button>
     </div>
     <div class="scen">
       <span class="lbl">ambition</span>
@@ -264,6 +271,48 @@
         </div>
       </div>
     </div>
+
+    <!-- ============ COST-OUT BRIDGE ============ -->
+    <div id="view4" class="hide">
+      <div class="grid">
+        <div>
+          <div class="sec" style="margin-bottom:2px">04 · COST-OUT BRIDGE · BUDGET → CHALLENGED BUDGET</div>
+          <h1 class="hero" id="brhero"></h1>
+          <p class="subline" id="brsub"></p>
+
+          <div class="panel" style="margin-bottom:16px">
+            <div class="pbody dial">
+              <div class="sl">
+                <div class="top"><span class="lbl">dial · capture share of the gap to best</span><span class="mono" id="brpct" style="color:var(--teal-bright);font-weight:700"></span></div>
+                <input type="range" id="brslider" min="0" max="100" value="50" />
+              </div>
+              <div class="stake real"><div class="v" id="brout"></div><div class="n">total cost-out</div></div>
+              <div class="stake stretch"><div class="v" id="brclose"></div><div class="n">challenged budget</div></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="phead"><span class="sec">01</span><h2>From budget to challenged budget — by entity</h2></div>
+            <div class="pbody"><div class="wf" id="brwf"></div><div class="wfaxis"></div></div>
+          </div>
+
+          <div class="panel" style="margin-top:16px">
+            <div class="phead"><span class="sec">02</span><h2>Cost-out by line — where the reduction comes from</h2></div>
+            <div style="padding:0 4px"><table><thead id="brthead"></thead><tbody id="brtbody"></tbody></table></div>
+          </div>
+          <div class="foot">Cost-out at the chosen capture, brought to the best plant per line. Each line carries its Budget Codes into the SCM procurement list and the IPM weekly tracker.</div>
+        </div>
+
+        <div class="panel glow copilot">
+          <div class="phead"><span class="sec">◇</span><h2>Cost Copilot</h2><span class="pill teal" style="margin-left:auto">bridge view</span></div>
+          <div class="pbody">
+            <div class="quote" id="brquote"></div>
+            <div class="lbl" style="margin:16px 0 4px">commitment lens</div>
+            <div id="bracts"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
 <script>
@@ -271,7 +320,7 @@
 const FLEET = {
   fx_2026: 16500,
   assets: [
-    { code:"ELB", full_name:"Energi Listrik Batam", mw:109.0, usd_per_kw_yr:51.37, controllable_om_idr:92381027483, cost_blocks:[
+    { code:"ELB", bcode:"ELB", full_name:"Energi Listrik Batam", mw:109.0, usd_per_kw_yr:51.37, controllable_om_idr:92381027483, cost_blocks:[
       {name:"Maintenance Service Agreement",value_idr:14338225000,semi:false},
       {name:"Maintenance Cost",value_idr:25050684515,semi:false},
       {name:"Consumable",value_idr:1638235870,semi:false},
@@ -283,31 +332,20 @@ const FLEET = {
       {name:"Other Opex",value_idr:4248645500,semi:false},
       {name:"Insurance",value_idr:10981571425,semi:true},
       {name:"Management Fees",value_idr:6207216167,semi:true} ] },
-    { code:"DEB", full_name:"Dalle Energy Batam", mw:76.0, usd_per_kw_yr:50.93, controllable_om_idr:63864606977, cost_blocks:[
+    // MEB and DEB share the same Batam site, O&M crew and management; combined as one budget entity.
+    { code:"MEB+DEB", bcode:"BTM", full_name:"Batam Combined · MEB + DEB", mw:158.1, usd_per_kw_yr:54.62, controllable_om_idr:142479889755, cost_blocks:[
       {name:"Maintenance Service Agreement",value_idr:24049731279,semi:false},
-      {name:"Maintenance Cost",value_idr:15442101393,semi:false},
-      {name:"Consumable",value_idr:3107587025,semi:false},
-      {name:"Salary & Allowance",value_idr:341552581,semi:false},
-      {name:"Professional Service",value_idr:1166000000,semi:false},
-      {name:"Rental",value_idr:4000000,semi:false},
-      {name:"Contract Service",value_idr:1038000000,semi:false},
-      {name:"Transportation",value_idr:342888965,semi:false},
-      {name:"Other Opex",value_idr:848100000,semi:false},
-      {name:"Insurance",value_idr:7260990685,semi:true},
-      {name:"Management Fees",value_idr:10263655050,semi:true} ] },
-    { code:"MEB", full_name:"Mitra Energi Batam", mw:82.1, usd_per_kw_yr:58.03, controllable_om_idr:78615282777, cost_blocks:[
-      {name:"Maintenance Service Agreement",value_idr:0,semi:false},
-      {name:"Maintenance Cost",value_idr:17306174652,semi:false},
-      {name:"Consumable",value_idr:5563887525,semi:false},
-      {name:"Salary & Allowance",value_idr:29263467774,semi:false},
-      {name:"Professional Service",value_idr:1196000000,semi:false},
-      {name:"Rental",value_idr:303400000,semi:false},
-      {name:"Contract Service",value_idr:6216693498,semi:false},
-      {name:"Transportation",value_idr:1571749417,semi:false},
-      {name:"Other Opex",value_idr:6543869111,semi:false},
-      {name:"Insurance",value_idr:7761040800,semi:true},
-      {name:"Management Fees",value_idr:2889000000,semi:true} ] },
-    { code:"MRPR", full_name:"Medco Ratch Power Riau", mw:275.0, usd_per_kw_yr:45.0, controllable_om_idr:204183800634, cost_blocks:[
+      {name:"Maintenance Cost",value_idr:32748276045,semi:false},
+      {name:"Consumable",value_idr:8671474550,semi:false},
+      {name:"Salary & Allowance",value_idr:29605020355,semi:false},
+      {name:"Professional Service",value_idr:2362000000,semi:false},
+      {name:"Rental",value_idr:307400000,semi:false},
+      {name:"Contract Service",value_idr:7254693498,semi:false},
+      {name:"Transportation",value_idr:1914638382,semi:false},
+      {name:"Other Opex",value_idr:7391969111,semi:false},
+      {name:"Insurance",value_idr:15022031485,semi:true},
+      {name:"Management Fees",value_idr:13152655050,semi:true} ] },
+    { code:"MRPR", bcode:"MRPR", full_name:"Medco Ratch Power Riau", mw:275.0, usd_per_kw_yr:45.0, controllable_om_idr:204183800634, cost_blocks:[
       {name:"Maintenance Service Agreement",value_idr:83911628333,semi:false},
       {name:"Maintenance Cost",value_idr:33255962226,semi:false},
       {name:"Consumable",value_idr:194250000,semi:false},
@@ -385,7 +423,7 @@ function l5lines(asset, blockName) {
     out.push({
       fam, drv, item: hint.item, uom: hint.uom, qty, freq,
       rate, fxlbl: hint.usd ? "USD" : "IDR", basis: hint.basis,
-      bc: asset.code + "-" + blockCode(blockName) + "-" + String(bc++).padStart(2,"0"),
+      bc: (asset.bcode||asset.code) + "-" + blockCode(blockName) + "-" + String(bc++).padStart(2,"0"),
       value
     });
   });
@@ -435,7 +473,8 @@ function tone(usd,best,isBest){
 function dotColor(gapBn,isBest){return isBest?"var(--green)":(gapBn>=8?"var(--red)":"var(--amber)");}
 
 /* =================== STATE =================== */
-const S = { tab:1, cap:0.5, asset:"MEB", block:"Consumable", challenge:0 };
+const S = { tab:1, cap:0.5, asset:"MEB+DEB", block:"Consumable", challenge:0 };
+const NUMWORD = {1:"One",2:"Two",3:"Three",4:"Four"};
 
 /* =================== LAYER 1 =================== */
 function renderL1(){
@@ -444,8 +483,9 @@ function renderL1(){
   let stretch=0; for(const r of MATRIX) stretch+=r.total_gap_idr*cap;
   document.getElementById("l1pct").textContent=pct+"%";
   document.getElementById("l1slider").value=pct;
+  const nAbove=assetsBW.filter(a=>a.usd_per_kw_yr>bestKw).length;
   document.getElementById("l1hero").innerHTML=
-    `Three of four gas plants run above ${bestCode}'s <span class="tealnum">$${bestKw.toFixed(0)}/kW-yr</span> best. `+
+    `${NUMWORD[nAbove]||nAbove} of ${assetsBW.length} entities run above ${bestCode}'s <span class="tealnum">$${bestKw.toFixed(0)}/kW-yr</span> best. `+
     `Closing ${pct}% of the gap frees <span class="num">Rp ${rpBn(head.tot)} Bn</span>.`;
   document.getElementById("l1sub").innerHTML=
     `Controllable O&amp;M ex-fuel, 2026 budget, four real gas-CCGT assets (<b>Rp ${rpBn(fleetTotal)} Bn</b> total), `+
@@ -455,7 +495,9 @@ function renderL1(){
   document.getElementById("l1stretch").textContent="Rp "+rpBn(stretch)+" Bn";
 
   // strip
-  document.getElementById("l1strip").innerHTML=assetsBW.map(a=>{
+  const stripEl=document.getElementById("l1strip");
+  stripEl.style.gridTemplateColumns=`repeat(${assetsBW.length},1fr)`;
+  stripEl.innerHTML=assetsBW.map(a=>{
     const gap=head.by[a.code]||0, gBn=gap/1e9, isBest=a.code===bestCode;
     const col=dotColor(gBn,isBest);
     return `<div class="scard" onclick="drillTo2('${a.code}')">
@@ -605,6 +647,67 @@ function renderL3(){
     `<div class="d">${DRV_FORMULA[L.drv]}. Basis: ${L.basis}. Budget code ${L.bc}.</div></div></div>`).join("");
 }
 
+/* =================== COST-OUT BRIDGE =================== */
+function renderBridge(){
+  const cap=S.cap, pct=Math.round(cap*100);
+  const head=fleetBestStake(cap);
+  document.getElementById("brpct").textContent=pct+"%";
+  document.getElementById("brslider").value=pct;
+  const opening=fleetTotal, out=head.tot, closing=opening-out;
+  document.getElementById("brhero").innerHTML=
+    `Cost-out bridge frees <span class="num">Rp ${rpBn(out)} Bn</span> from the <span class="tealnum">Rp ${rpBn(opening)} Bn</span> controllable budget at ${pct}% capture.`;
+  document.getElementById("brsub").innerHTML=
+    `Opening 2026 controllable O&amp;M, less the gap-to-best captured on each entity, equals the challenged budget. MRPR is the benchmark and contributes no cost-out.`;
+  document.getElementById("brout").textContent="−Rp "+rpBn(out)+" Bn";
+  document.getElementById("brclose").textContent="Rp "+rpBn(closing)+" Bn";
+
+  // waterfall: Opening | reductions per entity (desc, non-zero) | Challenged
+  const reds=assetsBW.map(a=>({code:a.code,bcode:a.bcode,v:head.by[a.code]||0}))
+    .filter(r=>r.v>0).sort((x,y)=>y.v-x.v);
+  const chartH=300, scale=chartH/opening;
+  let cum=opening, cols="";
+  // opening
+  cols+=`<div class="wfcol"><div class="val">Rp ${rpBn(opening)}</div>`+
+        `<div class="bar2" style="height:${opening*scale}px;background:linear-gradient(180deg,#1b2a26,#16211e);border:1px solid var(--border)"></div>`+
+        `<div class="cap">Opening<br>budget</div></div>`;
+  for(const r of reds){
+    const before=cum, after=cum-r.v; const spacer=chartH-before*scale;
+    cols+=`<div class="wfcol"><div class="val" style="color:var(--red)">−${rpBn(r.v)}</div>`+
+          `<div style="height:${spacer}px"></div>`+
+          `<div class="bar2" style="height:${r.v*scale}px;background:var(--red);opacity:.85"></div>`+
+          `<div class="cap">${r.code}<br>cost-out</div></div>`;
+    cum=after;
+  }
+  // closing
+  cols+=`<div class="wfcol"><div class="val" style="color:var(--teal-bright)">Rp ${rpBn(closing)}</div>`+
+        `<div class="bar2" style="height:${closing*scale}px;background:linear-gradient(180deg,var(--teal),#0c6f63)"></div>`+
+        `<div class="cap">Challenged<br>budget</div></div>`;
+  document.getElementById("brwf").innerHTML=cols;
+
+  // by-line cost-out table (top lines by gap captured)
+  const lineRows=[...MATRIX].map(r=>({block:r.block,best:r.best,best_code:r.best_code,out:r.total_gap_idr*cap}))
+    .sort((a,b)=>b.out-a.out);
+  document.getElementById("brthead").innerHTML=
+    `<tr><th class="l">Cost line</th><th>Best $/kW (entity)</th><th>Cost-out Rp Bn</th><th class="l" style="width:200px">share</th></tr>`;
+  const maxOut=Math.max(...lineRows.map(r=>r.out),1);
+  document.getElementById("brtbody").innerHTML=lineRows.map(r=>
+    `<tr><td class="l">${r.block}</td><td style="color:var(--muted)">$${r.best.toFixed(1)} <span class="mono" style="font-size:9px">${r.best_code}</span></td>`+
+    `<td style="color:${r.out>0?'var(--amber)':'var(--muted-2)'};font-weight:600">${r.out>0?rpBn2(r.out):'—'}</td>`+
+    `<td class="l"><span class="bar"><i style="width:${Math.round(r.out/maxOut*100)}%;background:var(--amber)"></i></span></td></tr>`
+  ).join("")+
+    `<tr class="total"><td class="l">Total cost-out</td><td></td><td style="color:var(--green)">${rpBn(out)}</td><td></td></tr>`;
+
+  // copilot: committed vs controllable lens
+  let committed=0; for(const a of FLEET.assets) for(const b of a.cost_blocks) if(b.semi) committed+=b.value_idr;
+  const topLine=lineRows[0];
+  document.getElementById("brquote").innerHTML=
+    `At ${pct}% capture the bridge takes the fleet from Rp ${rpBn(opening)} Bn to <b style="color:var(--teal-bright)">Rp ${rpBn(closing)} Bn</b>. `+
+    `<b>${topLine.block}</b> is the single biggest lever (Rp ${rpBn(topLine.out)} Bn). Roughly Rp ${rpBn(committed)} Bn sits in semi-committed lines (insurance, management fees) that need contract action, not a budget dial.`;
+  document.getElementById("bracts").innerHTML=lineRows.slice(0,3).map((r,i)=>
+    `<div class="act"><div class="i">0${i+1}</div><div><div class="t">${r.block} <span class="pill gold">Rp ${rpBn(r.out)} Bn</span></div>`+
+    `<div class="d">Bring every entity to ${r.best_code}'s $${r.best.toFixed(1)}/kW. <span class="link" onclick="drillTo3Block('${r.block.replace(/'/g,"\\'")}')">build L5 →</span></div></div></div>`).join("");
+}
+
 /* =================== NAV / EVENTS =================== */
 function setTab(n){
   S.tab=n;
@@ -612,9 +715,10 @@ function setTab(n){
   document.getElementById("view1").classList.toggle("hide",n!==1);
   document.getElementById("view2").classList.toggle("hide",n!==2);
   document.getElementById("view3").classList.toggle("hide",n!==3);
-  const sub={1:"Cross-asset benchmark",2:"L3–L4 cost-block decomposition",3:"L5 driver build · Qty×Freq×Rate×FX"}[n];
+  document.getElementById("view4").classList.toggle("hide",n!==4);
+  const sub={1:"Cross-asset benchmark",2:"L3–L4 cost-block decomposition",3:"L5 driver build · Qty×Freq×Rate×FX",4:"Cost-out bridge · budget → challenged"}[n];
   document.getElementById("navsub").textContent=sub;
-  if(n===1)renderL1(); if(n===2)renderL2(); if(n===3)renderL3();
+  if(n===1)renderL1(); if(n===2)renderL2(); if(n===3)renderL3(); if(n===4)renderBridge();
 }
 function setAsset(c){S.asset=c; if(S.tab===2)renderL2(); if(S.tab===3)renderL3();}
 function setBlock(b){S.block=b; renderL3();}
@@ -625,7 +729,8 @@ function drillTo3Block(b){S.block=b; setTab(3);}
 document.querySelectorAll(".tab").forEach(t=>{ if(!t.classList.contains("disabled")) t.onclick=()=>setTab(Number(t.dataset.tab)); });
 document.getElementById("l1slider").addEventListener("input",e=>{S.cap=Number(e.target.value)/100; syncSeg(); renderL1();});
 document.getElementById("l3slider").addEventListener("input",e=>{S.challenge=Number(e.target.value); renderL3();});
-document.querySelectorAll("#seg button").forEach(b=>b.onclick=()=>{S.cap=Number(b.dataset.cap)/100; syncSeg(); if(S.tab===1)renderL1();});
+document.getElementById("brslider").addEventListener("input",e=>{S.cap=Number(e.target.value)/100; syncSeg(); renderBridge();});
+document.querySelectorAll("#seg button").forEach(b=>b.onclick=()=>{S.cap=Number(b.dataset.cap)/100; syncSeg(); if(S.tab===1)renderL1(); else if(S.tab===4)renderBridge();});
 function syncSeg(){const p=Math.round(S.cap*100);document.querySelectorAll("#seg button").forEach(b=>b.classList.toggle("on",Number(b.dataset.cap)===p));}
 
 renderL1();
