@@ -26,7 +26,7 @@ export function CostOutBridge({ fleet, decisions }: { fleet: Fleet; decisions: D
           <BarChart data={data}>
             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
             <YAxis label={{ value: 'Rp Bn', angle: -90, position: 'insideLeft' }} />
-            <Tooltip formatter={(v: number) => [`Rp ${Math.abs(v).toFixed(1)} Bn`, '']} />
+            <Tooltip formatter={((v: number) => [`Rp ${Math.abs(Number(v)).toFixed(1)} Bn`, '']) as never} />
             <Bar dataKey="value">
               {data.map((d) => <Cell key={d.name} fill={d.kind === 'cut' ? '#2E7D32' : '#006CB8'} />)}
             </Bar>

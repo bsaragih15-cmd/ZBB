@@ -5,14 +5,17 @@ const OUTCOMES: DecisionOutcome[] = ['accept', 'cut', 'defer']
 
 export function DecisionControl({ budgetCode, excessIdr, current, onSave }:
   { budgetCode: string; excessIdr: number; current?: Decision; onSave: (d: Decision) => void }) {
+  // Brief: default the editable saving input to excessIdr/1e9 when the (default)
+  // outcome is 'cut', else 0. A saved decision restores its committed amount.
+  const outcome = current?.outcome ?? 'cut'
   const defaultSavingBn = current
     ? current.committed_saving_idr / 1e9
-    : (current?.outcome ?? 'defer') === 'cut'
+    : outcome === 'cut'
       ? excessIdr / 1e9
       : 0
   return (
     <div className="flex flex-wrap gap-2 items-center mt-2">
-      <select defaultValue={current?.outcome ?? 'defer'} id={`o-${budgetCode}`} className="border rounded px-2 py-1 text-sm">
+      <select defaultValue={outcome} id={`o-${budgetCode}`} className="border rounded px-2 py-1 text-sm">
         {OUTCOMES.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
       <select defaultValue={current?.lever ?? 'challenge'} id={`l-${budgetCode}`} className="border rounded px-2 py-1 text-sm">

@@ -9,7 +9,7 @@ export function BenchmarkBar({ rows, benchmark }: { rows: Row[]; benchmark: numb
       <BarChart data={rows} margin={{ top: 16, right: 24, left: 8, bottom: 8 }}>
         <XAxis dataKey="code" />
         <YAxis label={{ value: '$/kW-yr', angle: -90, position: 'insideLeft' }} />
-        <Tooltip formatter={(v: number, n: string) => n === 'usd_per_kw_yr' ? [`$${v}/kW-yr`, 'O&M'] : [v, n]} />
+        <Tooltip formatter={((v: number, n: string) => n === 'usd_per_kw_yr' ? [`$${v}/kW-yr`, 'O&M'] : [String(v), n]) as never} />
         <ReferenceLine y={benchmark} stroke="#006CB8" strokeDasharray="4 4"
           label={{ value: `best-in-fleet $${benchmark}`, fill: '#006CB8', fontSize: 11 }} />
         <Bar dataKey="usd_per_kw_yr">
