@@ -16,6 +16,8 @@ export function challengeQuestion(f: Flag): string {
       return `What basis supports the unit rate on ${f.budget_code}, given it sits outside the plausible band for this cost block?`
     case 'cross-asset':
       return `Why is ${f.budget_code} above the best-in-fleet peer by Rp ${rpBn(f.excess_idr)} Bn, and what would it take to match them?`
+    case 'integrity':
+      return `${f.budget_code} is booked as a lump sum with no Qty × Rate build-up — what volume and unit rate justify Rp ${rpBn(f.excess_idr)} Bn, and what is the basis of estimate?`
     default:
       return `What is the basis for ${f.budget_code}?`
   }
