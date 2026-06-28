@@ -62,7 +62,7 @@ export interface L5Line {
 }
 
 /** Back-solve representative L5 driver lines for one asset+block from the block total. */
-export function l5lines(asset: Asset, blockName: string, fx: number): L5Line[] {
+export function l5lines(asset: Asset, blockName: string): L5Line[] {
   const blk = asset.cost_blocks.find((b) => b.name === blockName)
   if (!blk) return []
   const fams = L4[blockName] ?? [[blockName, 'contract', 1.0] as [string, DriverType, number]]

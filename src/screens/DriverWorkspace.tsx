@@ -20,7 +20,7 @@ export function DriverWorkspace({ fleet, assetCode, block, onSelectAsset, onSele
     ? block
     : (a.cost_blocks.find((b) => b.name === 'Consumable')?.name ?? a.cost_blocks[0]?.name ?? '')
   const blk = a.cost_blocks.find((b) => b.name === activeBlock)
-  const lines = l5lines(a, activeBlock, fx)
+  const lines = l5lines(a, activeBlock)
   const ch = challenge / 100
   const m = matrix.find((r) => r.block === activeBlock)
 
