@@ -25,9 +25,9 @@ describe('LandingPage', () => {
   it('shows the four-asset benchmark with the best plant and a cost line', () => {
     render(<LandingPage fleet={fleet} onDrill={() => {}} />)
     expect(screen.getAllByText(/MRPR/).length).toBeGreaterThan(0)
-    expect(screen.getByText(/Salary & Allowance/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Salary & Allowance/).length).toBeGreaterThan(0)
     // the laggard's value-at-stake is surfaced, and the best plant gets a badge
-    expect(screen.getByText(/at stake/)).toBeInTheDocument()
+    expect(screen.getAllByText(/at stake/).length).toBeGreaterThan(0)
     expect(screen.getAllByText(/best-in-fleet/).length).toBeGreaterThan(0)
   })
 })

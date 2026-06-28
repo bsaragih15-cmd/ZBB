@@ -14,6 +14,6 @@ const decisions: Decision[] = [{ budget_code: 'ELB-X', outcome: 'cut', lever: 'c
 describe('CostOutBridge', () => {
   it('shows committed savings total', () => {
     render(<CostOutBridge fleet={fleet} decisions={decisions} />)
-    expect(screen.getByText(/4.0/)).toBeInTheDocument()
+    expect(screen.getAllByText(/4.0/).length).toBeGreaterThan(0)
   })
 })

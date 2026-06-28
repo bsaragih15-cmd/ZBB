@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import type { Fleet, Line, Decision } from './domain/types'
-import { loadFleet, loadElbLines } from './data/load'
+import type { Fleet, Decision } from './domain/types'
+import { loadFleet } from './data/load'
 import { loadDecisions } from './domain/decision-store'
 import { LandingPage } from './screens/LandingPage'
 import { AssetDrill } from './screens/AssetDrill'
-import { ChallengeWorkspace } from './screens/ChallengeWorkspace'
+import { DriverWorkspace } from './screens/DriverWorkspace'
 import { CostOutBridge } from './screens/CostOutBridge'
 
 type Screen = 'cross-asset' | 'l3l4' | 'l5' | 'bridge'
@@ -16,44 +16,62 @@ const NAV: { id: Screen; label: string }[] = [
   { id: 'bridge', label: 'Cost-out bridge' },
 ]
 
+const AMBITION: { label: string; cap: number }[] = [
+  { label: 'Light · 25%', cap: 0.25 },
+  { label: 'Base · 50%', cap: 0.5 },
+  { label: 'Stretch · 100%', cap: 1 },
+]
+
 export default function App() {
   const [fleet, setFleet] = useState<Fleet | null>(null)
-  const [elbLines, setElbLines] = useState<Line[]>([])
-  const [decisions, setDecisions] = useState<Decision[]>(loadDecisions())
+  const [decisions] = useState<Decision[]>(loadDecisions())
   const [screen, setScreen] = useState<Screen>('cross-asset')
-  const [activeAsset, setActiveAsset] = useState<string>('MEB')
+  const [activeAsset, setActiveAsset] = useState<string>('MEB+DEB')
+  const [activeBlock, setActiveBlock] = useState<string>('Consumable')
+  const [cap, setCap] = useState(0.5)
 
-  useEffect(() => { loadFleet().then(setFleet); loadElbLines().then(setElbLines) }, [])
-  if (!fleet) return <div className="p-8">Loading…</div>
+  useEffect(() => { loadFleet().then(setFleet) }, [])
+  if (!fleet) return <div className="wrap" style={{ color: 'var(--muted)' }}>Loading…</div>
 
   const nav = (
-    <nav className="flex items-center gap-2 px-4 py-2.5 border-b bg-white sticky top-0 z-10">
-      <span className="font-bold text-[#006CB8] mr-3 text-sm">MPI Cost Challenge</span>
-      {NAV.map((n) => (
-        <button key={n.id} onClick={() => setScreen(n.id)}
-          className={`px-3 py-1 rounded text-sm ${screen === n.id ? 'bg-[#006CB8] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-          {n.label}
-        </button>
-      ))}
-      {screen !== 'cross-asset' && screen !== 'bridge' && (
-        <span className="ml-auto text-xs text-gray-500">asset: <b className="text-gray-700">{activeAsset}</b></span>
-      )}
-    </nav>
+    <div className="nav">
+      <div className="brand">
+        <span className="glyph" />
+        MPI Cost Cockpit <small>budgeting · stress-test</small>
+      </div>
+      <div className="tabs">
+        {NAV.map((n) => (
+          <button key={n.id} className={`tab ${screen === n.id ? 'active' : ''}`} onClick={() => setScreen(n.id)}>
+            {n.label}
+          </button>
+        ))}
+      </div>
+      <div className="scen">
+        <span className="lbl">ambition</span>
+        <div className="seg">
+          {AMBITION.map((a) => (
+            <button key={a.label} className={Math.round(cap * 100) === Math.round(a.cap * 100) ? 'on' : ''}
+              onClick={() => setCap(a.cap)}>{a.label}</button>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div>
       {nav}
-      <main className="p-6">
-        {screen === 'cross-asset' && <LandingPage fleet={fleet}
+      <div className="wrap">
+        {screen === 'cross-asset' && <LandingPage fleet={fleet} cap={cap} onCap={setCap}
           onDrill={(code) => { setActiveAsset(code); setScreen('l3l4') }} />}
         {screen === 'l3l4' && <AssetDrill fleet={fleet} assetCode={activeAsset}
-          onChallenge={() => setScreen('l5')} />}
-        {screen === 'l5' && <ChallengeWorkspace assetCode={activeAsset}
-          lines={activeAsset === 'ELB' ? elbLines : []} fleet={fleet}
-          decisions={decisions} setDecisions={setDecisions} />}
-        {screen === 'bridge' && <CostOutBridge fleet={fleet} decisions={decisions} />}
-      </main>
+          onChallenge={() => setScreen('l5')}
+          onSelectAsset={setActiveAsset}
+          onDrillBlock={(b) => { setActiveBlock(b); setScreen('l5') }} />}
+        {screen === 'l5' && <DriverWorkspace fleet={fleet} assetCode={activeAsset} block={activeBlock}
+          onSelectAsset={setActiveAsset} onSelectBlock={setActiveBlock} />}
+        {screen === 'bridge' && <CostOutBridge fleet={fleet} decisions={decisions} cap={cap} onCap={setCap} />}
+      </div>
     </div>
   )
 }

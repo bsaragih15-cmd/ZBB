@@ -18,7 +18,7 @@ const fleet: Fleet = {
 describe('AssetDrill', () => {
   it('shows the asset cost blocks sorted by value', () => {
     render(<AssetDrill fleet={fleet} assetCode="MEB" onChallenge={() => {}} />)
-    expect(screen.getByText(/Maintenance Service Agreement/)).toBeInTheDocument()
-    expect(screen.getByText(/40/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Maintenance Service Agreement/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/40/).length).toBeGreaterThan(0)
   })
 })
