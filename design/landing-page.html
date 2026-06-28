@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MPI Cost Challenge · Layer 1 — Cross-asset comparison</title>
+<style>
+  :root {
+    --blue: #006CB8;
+    --green-bg: #E6F4EA; --green-fg: #1E7D34;
+    --amber-bg: #FCF3DC; --amber-fg: #9A6700;
+    --red-bg: #FBE7E5;   --red-fg: #B3261E;
+    --ink: #1f2933; --muted: #6b7280; --line: #e5e7eb;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #f7f8fa; color: var(--ink);
+    font-family: Calibri, "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 14px; line-height: 1.45;
+  }
+  h1, h2, .brand, th { font-family: "Trebuchet MS", Calibri, sans-serif; }
+  .nav {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border-bottom: 1px solid var(--line);
+    background: #fff; position: sticky; top: 0; z-index: 10;
+  }
+  .brand { font-weight: bold; color: var(--blue); margin-right: 14px; font-size: 14px; }
+  .tab {
+    padding: 5px 12px; border-radius: 6px; font-size: 13px; cursor: pointer;
+    border: none; background: #f1f3f5; color: var(--muted);
+  }
+  .tab.active { background: var(--blue); color: #fff; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 56px; }
+  h1 {
+    color: var(--blue); font-size: 26px; line-height: 1.3; margin: 0 0 6px;
+  }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 18px; max-width: 920px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+  /* slider row */
+  .stake-row {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 24px;
+    padding: 16px 18px; margin-bottom: 20px;
+  }
+  .slider-box { flex: 1; min-width: 280px; }
+  .slider-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .slider-top b { color: var(--blue); }
+  input[type=range] { width: 100%; accent-color: var(--blue); }
+  .stake { text-align: center; padding: 0 16px; border-left: 1px solid var(--line); }
+  .stake .lbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .stake .val { font-size: 24px; font-weight: bold; }
+  .stake .note { font-size: 10.5px; color: #9aa1ab; }
+  .stake.green .val { color: var(--green-fg); }
+  .stake.amber .val { color: var(--amber-fg); }
+  /* asset cards */
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .acard { text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 13px; cursor: pointer; transition: .15s; }
+  .acard:hover { border-color: var(--blue); box-shadow: 0 2px 10px rgba(0,108,184,.10); }
+  .acard .top { display: flex; align-items: center; justify-content: space-between; }
+  .acard .code { font-weight: bold; color: #374151; font-size: 15px; }
+  .dot { width: 9px; height: 9px; border-radius: 9px; display: inline-block; }
+  .acard .name { font-size: 11px; color: var(--muted); margin: 2px 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .acard .kw { font-size: 21px; font-weight: bold; color: var(--blue); }
+  .acard .kw span { font-size: 11px; font-weight: normal; color: #9aa1ab; }
+  .acard .rp { font-size: 11px; color: var(--muted); }
+  .acard .badge { margin-top: 8px; font-size: 13px; font-weight: 600; }
+  /* heatmap */
+  .hm-head { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .hm-head h2 { margin: 0; font-size: 15px; color: #374151; }
+  .hm-head p { margin: 3px 0 0; font-size: 11px; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { background: #f9fafb; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--line); padding: 8px; text-align: right; }
+  thead th.l { text-align: left; padding-left: 16px; }
+  thead th .small { font-size: 10px; font-weight: normal; color: #9aa1ab; }
+  tbody td { padding: 8px; text-align: right; font-variant-numeric: tabular-nums; border-bottom: 1px solid var(--line); }
+  tbody td.l { text-align: left; padding-left: 16px; color: #374151; }
+  tbody tr:last-child td { border-bottom: none; }
+  .semi { font-size: 10px; color: #9aa1ab; margin-left: 4px; }
+  tr.total td { background: #f9fafb; font-weight: bold; }
+  .foot { font-size: 11px; color: #9aa1ab; margin-top: 10px; }
+</style>
+</head>
+<body>
+  <div class="nav">
+    <span class="brand">MPI Cost Challenge</span>
+    <button class="tab active">1 · Cross-asset</button>
+    <button class="tab">2 · L3–L4 per asset</button>
+    <button class="tab">3 · L5 per asset</button>
+    <button class="tab">Cost-out bridge</button>
+  </div>
+
+  <div class="wrap">
+    <h1 id="hero"></h1>
+    <p class="sub" id="subline"></p>
+
+    <div class="card stake-row">
+      <div class="slider-box">
+        <div class="slider-top">
+          <span>Ambition: capture share of the gap to best</span>
+          <b id="pctLabel">50%</b>
+        </div>
+        <input type="range" id="slider" min="0" max="100" value="50" />
+      </div>
+      <div class="stake green">
+        <div class="lbl">Match the best plant</div>
+        <div class="val" id="stakeReal"></div>
+        <div class="note" id="stakeRealNote"></div>
+      </div>
+      <div class="stake amber">
+        <div class="lbl">Match best on every line</div>
+        <div class="val" id="stakeStretch"></div>
+        <div class="note">stretch ceiling</div>
+      </div>
+    </div>
+
+    <div class="cards" id="cards"></div>
+
+    <div class="card">
+      <div class="hm-head">
+        <h2>Where the money sits: $/kW-yr by cost line, benchmarked across the fleet</h2>
+        <p>Green = best-in-fleet on that line. Right column = stretch pool if every asset matched the best on this line (<span id="capCaption">50%</span> capture). Lines where a plant books Rp 0 are benchmarked to the best <i>non-zero</i> plant.</p>
+      </div>
+      <table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="foot">Click any asset card to drop to Layer 2 (L3–L4 cost-block detail) and Layer 3 (L5 line-level driver challenge).</p>
+  </div>
+
+<script>
+// ---- Real ELB/DEB/MEB/MRPR 2026 budget data (controllable O&M ex-fuel) ----
+const FLEET = {
+  fx_2026: 16500, best_in_fleet_code: "MRPR",
+  assets: [
+    { code:"ELB", full_name:"Energi Listrik Batam", mw:109.0, usd_per_kw_yr:51.37, controllable_om_idr:92381027483, cost_blocks:[
+      {name:"Maintenance Service Agreement",value_idr:14338225000,semi_committed:false},
+      {name:"Maintenance Cost",value_idr:25050684515,semi_committed:false},
+      {name:"Consumable",value_idr:1638235870,semi_committed:false},
+      {name:"Salary & Allowance",value_idr:22231764546,semi_committed:false},
+      {name:"Professional Service",value_idr:1008289460,semi_committed:false},
+      {name:"Rental",value_idr:270500000,semi_committed:false},
+      {name:"Contract Service",value_idr:5580145000,semi_committed:false},
+      {name:"Transportation",value_idr:825750000,semi_committed:false},
+      {name:"Other Opex",value_idr:4248645500,semi_committed:false},
+      {name:"Insurance",value_idr:10981571425,semi_committed:true},
+      {name:"Management Fees",value_idr:6207216167,semi_committed:true} ] },
+    { code:"DEB", full_name:"Dalle Energy Batam", mw:76.0, usd_per_kw_yr:50.93, controllable_om_idr:63864606977, cost_blocks:[
+      {name:"Maintenance Service Agreement",value_idr:24049731279,semi_committed:false},
+      {name:"Maintenance Cost",value_idr:15442101393,semi_committed:false},
+      {name:"Consumable",value_idr:3107587025,semi_committed:false},
+      {name:"Salary & Allowance",value_idr:341552581,semi_committed:false},
+      {name:"Professional Service",value_idr:1166000000,semi_committed:false},
+      {name:"Rental",value_idr:4000000,semi_committed:false},
+      {name:"Contract Service",value_idr:1038000000,semi_committed:false},
+      {name:"Transportation",value_idr:342888965,semi_committed:false},
+      {name:"Other Opex",value_idr:848100000,semi_committed:false},
+      {name:"Insurance",value_idr:7260990685,semi_committed:true},
+      {name:"Management Fees",value_idr:10263655050,semi_committed:true} ] },
+    { code:"MEB", full_name:"Mitra Energi Batam", mw:82.1, usd_per_kw_yr:58.03, controllable_om_idr:78615282777, cost_blocks:[
+      {name:"Maintenance Service Agreement",value_idr:0,semi_committed:false},
+      {name:"Maintenance Cost",value_idr:17306174652,semi_committed:false},
+      {name:"Consumable",value_idr:5563887525,semi_committed:false},
+      {name:"Salary & Allowance",value_idr:29263467774,semi_committed:false},
+      {name:"Professional Service",value_idr:1196000000,semi_committed:false},
+      {name:"Rental",value_idr:303400000,semi_committed:false},
+      {name:"Contract Service",value_idr:6216693498,semi_committed:false},
+      {name:"Transportation",value_idr:1571749417,semi_committed:false},
+      {name:"Other Opex",value_idr:6543869111,semi_committed:false},
+      {name:"Insurance",value_idr:7761040800,semi_committed:true},
+      {name:"Management Fees",value_idr:2889000000,semi_committed:true} ] },
+    { code:"MRPR", full_name:"Medco Ratch Power Riau", mw:275.0, usd_per_kw_yr:45.0, controllable_om_idr:204183800634, cost_blocks:[
+      {name:"Maintenance Service Agreement",value_idr:83911628333,semi_committed:false},
+      {name:"Maintenance Cost",value_idr:33255962226,semi_committed:false},
+      {name:"Consumable",value_idr:194250000,semi_committed:false},
+      {name:"Salary & Allowance",value_idr:14255577282,semi_committed:false},
+      {name:"Professional Service",value_idr:8769958225,semi_committed:false},
+      {name:"Rental",value_idr:5970366018,semi_committed:false},
+      {name:"Contract Service",value_idr:7853200467,semi_committed:false},
+      {name:"Transportation",value_idr:3970764000,semi_committed:false},
+      {name:"Other Opex",value_idr:14739704684,semi_committed:false},
+      {name:"Insurance",value_idr:29762389400,semi_committed:true},
+      {name:"Management Fees",value_idr:1500000000,semi_committed:true} ] },
+  ]
+};
+
+const fx = FLEET.fx_2026;
+const rpBn = (idr) => (idr / 1e9).toFixed(1);
+const blockUsdPerKw = (idr, mw) => idr / (mw * 1000) / fx;
+
+// assets best -> worst by total $/kW
+const assets = [...FLEET.assets].sort((a, b) => a.usd_per_kw_yr - b.usd_per_kw_yr);
+
+// ---- cost matrix: per line benchmark to best NON-ZERO plant ----
+function buildMatrix() {
+  const names = []; const seen = new Set();
+  const totals = {}; const semi = {};
+  for (const a of FLEET.assets) for (const b of a.cost_blocks) {
+    totals[b.name] = (totals[b.name] || 0) + b.value_idr;
+    if (b.semi_committed) semi[b.name] = true;
+    if (!seen.has(b.name)) { seen.add(b.name); names.push(b.name); }
+  }
+  names.sort((x, y) => totals[y] - totals[x]);
+  return names.map((name) => {
+    const raw = assets.map((a) => {
+      const b = a.cost_blocks.find((x) => x.name === name);
+      const v = b ? b.value_idr : 0;
+      return { code: a.code, mw: a.mw, value_idr: v, usd: blockUsdPerKw(v, a.mw) };
+    });
+    const nonzero = raw.filter((c) => c.usd > 0);
+    const best = nonzero.length ? Math.min(...nonzero.map((c) => c.usd)) : 0;
+    const best_code = (nonzero.find((c) => c.usd === best) || raw[0]).code;
+    let total_gap = 0;
+    const cells = raw.map((c) => {
+      const bench = best * c.mw * 1000 * fx;
+      const gap = Math.max(0, c.value_idr - bench);
+      total_gap += gap;
+      return { ...c, is_best: c.usd === best && c.usd > 0, gap_idr: gap };
+    });
+    return { block: name, semi: !!semi[name], best, best_code, cells, total_gap_idr: total_gap };
+  });
+}
+
+// realistic headline: bring every plant's TOTAL $/kW to the fleet best
+function fleetBestStake(capturePct) {
+  const best = Math.min(...assets.map((a) => a.usd_per_kw_yr));
+  const best_code = assets.find((a) => a.usd_per_kw_yr === best).code;
+  const by_asset = {}; let total = 0;
+  for (const a of assets) {
+    const gap = Math.max(0, a.usd_per_kw_yr - best) * a.mw * 1000 * fx * capturePct;
+    by_asset[a.code] = gap; total += gap;
+  }
+  return { total, best, best_code, by_asset };
+}
+
+function cellTone(usd, best, isBest) {
+  if (isBest || best === 0 || usd === 0) return ["var(--green-bg)", "var(--green-fg)"];
+  const r = usd / best;
+  if (r <= 1.15) return ["var(--green-bg)", "var(--green-fg)"];
+  if (r <= 1.6)  return ["var(--amber-bg)", "var(--amber-fg)"];
+  return ["var(--red-bg)", "var(--red-fg)"];
+}
+
+const matrix = buildMatrix();
+const fleetTotalIdr = assets.reduce((s, a) => s + a.controllable_om_idr, 0);
+
+function render(capturePct) {
+  const head = fleetBestStake(capturePct);
+  const pct = Math.round(capturePct * 100);
+  document.getElementById("pctLabel").textContent = pct + "%";
+  document.getElementById("capCaption").textContent = pct + "%";
+
+  document.getElementById("hero").textContent =
+    `Three of four gas plants run above ${head.best_code}'s $${head.best.toFixed(0)}/kW-yr best. ` +
+    `Closing ${pct}% of the gap frees Rp ${rpBn(head.total)} Bn.`;
+  document.getElementById("subline").textContent =
+    `Controllable O&M ex-fuel, 2026 budget, four real gas-CCGT assets (Rp ${rpBn(fleetTotalIdr)} Bn total), ` +
+    `each cost line benchmarked to its best-in-fleet peer. FX ${fx.toLocaleString()}.`;
+
+  // stretch (per-line) total
+  let stretch = 0; for (const r of matrix) stretch += r.total_gap_idr * capturePct;
+  document.getElementById("stakeReal").textContent = "Rp " + rpBn(head.total) + " Bn";
+  document.getElementById("stakeRealNote").textContent = "realistic, vs " + head.best_code;
+  document.getElementById("stakeStretch").textContent = "Rp " + rpBn(stretch) + " Bn";
+
+  // asset cards
+  const cards = assets.map((a) => {
+    const gap = head.by_asset[a.code] || 0;
+    const isBest = a.code === head.best_code;
+    const tone = isBest ? "var(--green-fg)" : (gap / 1e9 >= 8 ? "var(--red-fg)" : "var(--amber-fg)");
+    return `<div class="acard">
+      <div class="top"><span class="code">${a.code}</span><span class="dot" style="background:${tone}"></span></div>
+      <div class="name">${a.full_name} · ${a.mw} MW</div>
+      <div class="kw">$${a.usd_per_kw_yr.toFixed(1)}<span>/kW-yr</span></div>
+      <div class="rp">Rp ${(a.controllable_om_idr/1e9).toFixed(1)} Bn controllable</div>
+      <div class="badge" style="color:${tone}">${isBest ? "best-in-fleet" : "Rp " + rpBn(gap) + " Bn at stake"}</div>
+    </div>`;
+  }).join("");
+  document.getElementById("cards").innerHTML = cards;
+
+  // heatmap head
+  document.getElementById("thead").innerHTML =
+    `<tr><th class="l">Cost line</th>` +
+    assets.map((a) => `<th>${a.code}<div class="small">$${a.usd_per_kw_yr.toFixed(0)}/kW</div></th>`).join("") +
+    `<th>Stretch<div class="small">Rp Bn</div></th></tr>`;
+
+  // heatmap body
+  const rows = matrix.map((row) => {
+    const tds = assets.map((a) => {
+      const c = row.cells.find((x) => x.code === a.code);
+      const [bg, fg] = cellTone(c.usd, row.best, c.is_best);
+      const w = c.is_best ? 700 : 500;
+      return `<td style="background:${bg};color:${fg};font-weight:${w}">$${c.usd.toFixed(1)}</td>`;
+    }).join("");
+    return `<tr><td class="l">${row.block}${row.semi ? '<span class="semi">(semi-committed)</span>' : ""}</td>${tds}` +
+      `<td>${(row.total_gap_idr * capturePct / 1e9).toFixed(1)}</td></tr>`;
+  }).join("");
+  const totalRow = `<tr class="total"><td class="l">Total controllable</td>` +
+    assets.map((a) => `<td>$${a.usd_per_kw_yr.toFixed(1)}</td>`).join("") +
+    `<td style="color:var(--amber-fg)">${rpBn(stretch)}</td></tr>`;
+  document.getElementById("tbody").innerHTML = rows + totalRow;
+}
+
+const slider = document.getElementById("slider");
+slider.addEventListener("input", () => render(Number(slider.value) / 100));
+render(0.5);
+</script>
+</body>
+</html>
