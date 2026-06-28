@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MPI Cost Cockpit · Stress-test the budget, asset by asset</title>
+<style>
+  :root {
+    --bg: #060a09;
+    --panel: #0c1311;
+    --panel-2: #0f1815;
+    --border: rgba(125,180,168,0.14);
+    --border-soft: rgba(125,180,168,0.08);
+    --teal: #2DD4BF;
+    --teal-bright: #5EEAD4;
+    --gold: #E8B339;
+    --red: #F8716A;
+    --green: #34D399;
+    --blue: #5B9BF5;
+    --amber: #E0A93B;
+    --text: #DDE7E4;
+    --muted: #6E7E79;
+    --muted-2: #4d5a56;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--text); font-family: var(--sans); font-size: 13px;
+    background:
+      radial-gradient(1100px 620px at 50% -8%, rgba(45,212,191,0.07), transparent 60%),
+      radial-gradient(900px 500px at 50% 120%, rgba(45,212,191,0.04), transparent 60%),
+      var(--bg);
+    min-height: 100vh;
+  }
+  .mono { font-family: var(--mono); }
+  .lbl { font-family: var(--mono); font-size: 10px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+  .sec { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--muted-2); }
+  /* ---- nav ---- */
+  .nav { display: flex; align-items: center; gap: 14px; padding: 12px 22px; border-bottom: 1px solid var(--border-soft);
+         position: sticky; top: 0; z-index: 20; background: rgba(6,10,9,0.86); backdrop-filter: blur(8px); }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 14px; letter-spacing: .01em; }
+  .brand .glyph { width: 11px; height: 11px; border-radius: 4px; background: var(--teal); box-shadow: 0 0 14px var(--teal); }
+  .brand small { font-family: var(--mono); font-size: 10px; font-weight: 400; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  .tabs { display: flex; gap: 4px; }
+  .tab { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; padding: 6px 11px; border-radius: 7px; cursor: pointer;
+         border: 1px solid transparent; background: transparent; color: var(--muted); text-transform: uppercase; }
+  .tab:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .tab.active { color: #04120f; background: var(--teal); border-color: var(--teal); font-weight: 700; box-shadow: 0 0 16px rgba(45,212,191,0.35); }
+  .tab.disabled { opacity: .35; cursor: not-allowed; }
+  .scen { margin-left: auto; display: flex; align-items: center; gap: 7px; }
+  .seg { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; padding: 6px 12px; border: none; cursor: pointer;
+                background: transparent; color: var(--muted); text-transform: uppercase; }
+  .seg button.on { background: var(--teal); color: #04120f; font-weight: 700; }
+  /* ---- layout ---- */
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 22px 22px 64px; }
+  .grid { display: grid; grid-template-columns: 1fr 360px; gap: 16px; align-items: start; }
+  .panel { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--border); border-radius: 12px; }
+  .panel.glow { border-color: rgba(45,212,191,0.4); box-shadow: 0 0 0 1px rgba(45,212,191,0.06), 0 8px 30px rgba(0,0,0,0.4); }
+  .phead { padding: 13px 16px; border-bottom: 1px solid var(--border-soft); display: flex; align-items: center; gap: 10px; }
+  .phead h2 { margin: 0; font-size: 14px; font-weight: 600; }
+  .pill { font-family: var(--mono); font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; padding: 3px 7px; border-radius: 5px; }
+  .pill.teal { background: rgba(45,212,191,0.14); color: var(--teal-bright); }
+  .pill.red { background: rgba(248,113,106,0.14); color: var(--red); }
+  .pill.gold { background: rgba(232,179,57,0.14); color: var(--gold); }
+  .pill.green { background: rgba(52,211,153,0.14); color: var(--green); }
+  .pill.ghost { background: rgba(255,255,255,0.04); color: var(--muted); }
+  .pbody { padding: 16px; }
+  /* hero */
+  h1.hero { font-size: 25px; line-height: 1.32; margin: 4px 0 8px; font-weight: 700; letter-spacing: -0.01em; }
+  h1.hero .num { color: var(--gold); }
+  h1.hero .tealnum { color: var(--teal-bright); }
+  .subline { color: var(--muted); font-size: 12px; margin: 0 0 18px; max-width: 880px; line-height: 1.5; }
+  .subline b { color: var(--text); }
+  /* market strip */
+  .strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .scard { background: var(--panel); border: 1px solid var(--border-soft); border-radius: 10px; padding: 12px 13px; cursor: pointer; transition: .14s; position: relative; }
+  .scard:hover { border-color: var(--teal); transform: translateY(-1px); }
+  .scard .row1 { display: flex; align-items: center; justify-content: space-between; }
+  .scard .code { font-weight: 700; font-size: 14px; }
+  .dot { width: 8px; height: 8px; border-radius: 8px; display: inline-block; }
+  .scard .name { font-family: var(--mono); font-size: 9.5px; color: var(--muted); margin: 3px 0 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .scard .kw { font-size: 22px; font-weight: 700; }
+  .scard .kw span { font-size: 11px; font-weight: 400; color: var(--muted); }
+  .scard .sub2 { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .scard .badge { font-family: var(--mono); font-size: 10.5px; letter-spacing: .03em; margin-top: 9px; padding-top: 8px; border-top: 1px solid var(--border-soft); }
+  /* slider */
+  .dial { display: flex; flex-wrap: wrap; align-items: center; gap: 22px; }
+  .dial .sl { flex: 1; min-width: 240px; }
+  .sl .top { display: flex; justify-content: space-between; margin-bottom: 7px; }
+  input[type=range] { width: 100%; -webkit-appearance: none; height: 4px; border-radius: 4px; background: rgba(255,255,255,0.1); outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--teal);
+       cursor: pointer; box-shadow: 0 0 10px var(--teal); border: 2px solid #04120f; }
+  .stake { text-align: center; padding-left: 20px; border-left: 1px solid var(--border-soft); }
+  .stake .v { font-size: 23px; font-weight: 700; }
+  .stake.real .v { color: var(--green); }
+  .stake.stretch .v { color: var(--amber); }
+  .stake .n { font-family: var(--mono); font-size: 9.5px; color: var(--muted-2); margin-top: 1px; }
+  /* tables */
+  table { width: 100%; border-collapse: collapse; }
+  thead th { font-family: var(--mono); font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+             font-weight: 500; padding: 9px 8px; text-align: right; border-bottom: 1px solid var(--border-soft); }
+  thead th.l { text-align: left; }
+  tbody td { padding: 9px 8px; text-align: right; font-variant-numeric: tabular-nums; border-bottom: 1px solid var(--border-soft); font-size: 12.5px; }
+  tbody td.l { text-align: left; color: var(--text); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.clickable { cursor: pointer; }
+  tbody tr.clickable:hover td { background: rgba(45,212,191,0.05); }
+  .semi { font-family: var(--mono); font-size: 9px; color: var(--muted-2); margin-left: 5px; }
+  tr.total td { background: rgba(255,255,255,0.02); font-weight: 700; }
+  .bar { height: 6px; border-radius: 4px; background: rgba(255,255,255,0.06); overflow: hidden; min-width: 80px; display: inline-block; vertical-align: middle; }
+  .bar > i { display: block; height: 100%; border-radius: 4px; }
+  .link { color: var(--teal); font-family: var(--mono); font-size: 10px; letter-spacing: .04em; cursor: pointer; text-transform: uppercase; }
+  .link:hover { color: var(--teal-bright); text-decoration: underline; }
+  /* copilot rail */
+  .copilot .quote { background: rgba(45,212,191,0.05); border: 1px solid rgba(45,212,191,0.18); border-radius: 9px; padding: 12px 13px; font-size: 12.5px; line-height: 1.5; color: #cfe9e2; }
+  .copilot .act { display: flex; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border-soft); }
+  .copilot .act:last-child { border-bottom: none; }
+  .copilot .act .i { font-family: var(--mono); font-size: 10px; color: var(--muted-2); padding-top: 1px; }
+  .copilot .act .t { font-weight: 600; font-size: 12.5px; margin-bottom: 2px; }
+  .copilot .act .d { font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+  /* asset selector pills */
+  .apills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .ap { font-family: var(--mono); font-size: 11px; padding: 6px 13px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border);
+        background: transparent; color: var(--muted); }
+  .ap:hover { color: var(--text); }
+  .ap.on { background: var(--teal); color: #04120f; font-weight: 700; border-color: var(--teal); }
+  /* stat chips */
+  .stats { display: flex; gap: 26px; flex-wrap: wrap; margin: 14px 0 4px; }
+  .stat .k { font-family: var(--mono); font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .stat .v { font-size: 21px; font-weight: 700; margin-top: 2px; }
+  .l4row td { background: rgba(255,255,255,0.015); }
+  .l4row .fam { padding-left: 22px; color: var(--muted); }
+  .drv { font-family: var(--mono); font-size: 9px; letter-spacing: .04em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: rgba(91,155,245,0.12); color: var(--blue); }
+  .foot { font-family: var(--mono); font-size: 10px; color: var(--muted-2); margin-top: 12px; letter-spacing: .03em; }
+  .hide { display: none; }
+  .caret { display: inline-block; width: 12px; color: var(--muted); transition: transform .12s; }
+  .caret.open { transform: rotate(90deg); color: var(--teal); }
+</style>
+</head>
+<body>
+  <div class="nav">
+    <div class="brand"><span class="glyph"></span> MPI Cost Cockpit <small id="navsub">Budget challenge · zero-based</small></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="1">1 · Cross-asset</button>
+      <button class="tab" data-tab="2">2 · L3–L4 per asset</button>
+      <button class="tab" data-tab="3">3 · L5 per asset</button>
+      <button class="tab disabled">Cost-out bridge</button>
+    </div>
+    <div class="scen">
+      <span class="lbl">ambition</span>
+      <div class="seg" id="seg">
+        <button data-cap="25">Light · 25%</button>
+        <button class="on" data-cap="50">Base · 50%</button>
+        <button data-cap="100">Stretch · 100%</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- ============ LAYER 1 ============ -->
+    <div id="view1">
+      <div class="grid">
+        <div>
+          <div class="sec" style="margin-bottom:2px">01 · CROSS-ASSET · CONTROLLABLE O&amp;M EX-FUEL · 2026 BUDGET · ILLUSTRATIVE</div>
+          <h1 class="hero" id="l1hero"></h1>
+          <p class="subline" id="l1sub"></p>
+
+          <div class="strip" id="l1strip"></div>
+
+          <div class="panel" style="margin-bottom:16px">
+            <div class="pbody dial">
+              <div class="sl">
+                <div class="top"><span class="lbl">dial · capture share of the gap to best</span><span class="mono" id="l1pct" style="color:var(--teal-bright);font-weight:700"></span></div>
+                <input type="range" id="l1slider" min="0" max="100" value="50" />
+              </div>
+              <div class="stake real"><div class="v" id="l1real"></div><div class="n" id="l1realn"></div></div>
+              <div class="stake stretch"><div class="v" id="l1stretch"></div><div class="n">match best on every line</div></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="phead"><span class="sec">02</span><h2>Where the money sits — $/kW-yr by cost line, benchmarked across the fleet</h2></div>
+            <div style="padding:0 4px"><table><thead id="l1thead"></thead><tbody id="l1tbody"></tbody></table></div>
+          </div>
+          <div class="foot">Green = best-in-fleet on that line. Lines where a plant books Rp 0 are benchmarked to the best non-zero plant. Click any asset to drill to L3–L4.</div>
+        </div>
+
+        <!-- copilot rail -->
+        <div class="panel glow copilot">
+          <div class="phead"><span class="sec">◇</span><h2>Cost Copilot</h2><span class="pill teal" style="margin-left:auto">fleet view</span></div>
+          <div class="pbody">
+            <div class="quote" id="l1quote"></div>
+            <div class="lbl" style="margin:16px 0 4px">recommended challenges</div>
+            <div id="l1acts"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ LAYER 2 ============ -->
+    <div id="view2" class="hide">
+      <div class="grid">
+        <div>
+          <div class="sec" style="margin-bottom:8px">02 · L3–L4 PER ASSET · COST-BLOCK DECOMPOSITION</div>
+          <div class="apills" id="l2pills" style="margin-bottom:14px"></div>
+          <h1 class="hero" id="l2hero"></h1>
+          <div class="stats" id="l2stats"></div>
+
+          <div class="panel" style="margin-top:16px">
+            <div class="phead"><span class="sec">L3</span><h2>Cost blocks, ranked by gap to fleet best</h2><span class="pill ghost" style="margin-left:auto">click a row for L4 families</span></div>
+            <div style="padding:0 4px"><table><thead id="l2thead"></thead><tbody id="l2tbody"></tbody></table></div>
+          </div>
+          <div class="foot">L4 families are the standard driver groupings each block must resolve to. Each family carries one driver type that sets its L5 math.</div>
+        </div>
+
+        <div class="panel glow copilot">
+          <div class="phead"><span class="sec">◇</span><h2>Cost Copilot</h2><span class="pill teal" style="margin-left:auto" id="l2tag"></span></div>
+          <div class="pbody">
+            <div class="quote" id="l2quote"></div>
+            <div class="lbl" style="margin:16px 0 4px">where to challenge first</div>
+            <div id="l2acts"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ LAYER 3 ============ -->
+    <div id="view3" class="hide">
+      <div class="grid">
+        <div>
+          <div class="sec" style="margin-bottom:8px">03 · L5 PER ASSET · DRIVER DECOMPOSITION · Qty × Freq × Rate × FX</div>
+          <div class="apills" id="l3pills" style="margin-bottom:10px"></div>
+          <div class="apills" id="l3blocks" style="margin-bottom:14px"></div>
+          <h1 class="hero" id="l3hero"></h1>
+          <div class="subline" id="l3sub"></div>
+
+          <div class="panel" style="margin-bottom:16px">
+            <div class="pbody dial">
+              <div class="sl">
+                <div class="top"><span class="lbl">challenge · trim unit rates / quantities by</span><span class="mono" id="l3pct" style="color:var(--amber);font-weight:700"></span></div>
+                <input type="range" id="l3slider" min="0" max="40" value="0" />
+              </div>
+              <div class="stake real"><div class="v" id="l3save"></div><div class="n">saving on this block</div></div>
+              <div class="stake stretch"><div class="v" id="l3after"></div><div class="n">challenged budget</div></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="phead"><span class="sec">L5</span><h2>Driver lines — bottom-up build</h2><span class="pill green" style="margin-left:auto">carries Budget Code → IPM + SCM</span></div>
+            <div style="padding:0 4px;overflow-x:auto"><table><thead id="l3thead"></thead><tbody id="l3tbody"></tbody></table></div>
+          </div>
+          <div class="foot" id="l3foot"></div>
+        </div>
+
+        <div class="panel glow copilot">
+          <div class="phead"><span class="sec">◇</span><h2>Cost Copilot</h2><span class="pill teal" style="margin-left:auto">driver view</span></div>
+          <div class="pbody">
+            <div class="quote" id="l3quote"></div>
+            <div class="lbl" style="margin:16px 0 4px">basis-of-estimate checks</div>
+            <div id="l3acts"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =================== DATA (real 2026 ELB/DEB/MEB/MRPR controllable O&M) =================== */
+const FLEET = {
+  fx_2026: 16500,
+  assets: [
+    { code:"ELB", full_name:"Energi Listrik Batam", mw:109.0, usd_per_kw_yr:51.37, controllable_om_idr:92381027483, cost_blocks:[
+      {name:"Maintenance Service Agreement",value_idr:14338225000,semi:false},
+      {name:"Maintenance Cost",value_idr:25050684515,semi:false},
+      {name:"Consumable",value_idr:1638235870,semi:false},
+      {name:"Salary & Allowance",value_idr:22231764546,semi:false},
+      {name:"Professional Service",value_idr:1008289460,semi:false},
+      {name:"Rental",value_idr:270500000,semi:false},
+      {name:"Contract Service",value_idr:5580145000,semi:false},
+      {name:"Transportation",value_idr:825750000,semi:false},
+      {name:"Other Opex",value_idr:4248645500,semi:false},
+      {name:"Insurance",value_idr:10981571425,semi:true},
+      {name:"Management Fees",value_idr:6207216167,semi:true} ] },
+    { code:"DEB", full_name:"Dalle Energy Batam", mw:76.0, usd_per_kw_yr:50.93, controllable_om_idr:63864606977, cost_blocks:[
+      {name:"Maintenance Service Agreement",value_idr:24049731279,semi:false},
+      {name:"Maintenance Cost",value_idr:15442101393,semi:false},
+      {name:"Consumable",value_idr:3107587025,semi:false},
+      {name:"Salary & Allowance",value_idr:341552581,semi:false},
+      {name:"Professional Service",value_idr:1166000000,semi:false},
+      {name:"Rental",value_idr:4000000,semi:false},
+      {name:"Contract Service",value_idr:1038000000,semi:false},
+      {name:"Transportation",value_idr:342888965,semi:false},
+      {name:"Other Opex",value_idr:848100000,semi:false},
+      {name:"Insurance",value_idr:7260990685,semi:true},
+      {name:"Management Fees",value_idr:10263655050,semi:true} ] },
+    { code:"MEB", full_name:"Mitra Energi Batam", mw:82.1, usd_per_kw_yr:58.03, controllable_om_idr:78615282777, cost_blocks:[
+      {name:"Maintenance Service Agreement",value_idr:0,semi:false},
+      {name:"Maintenance Cost",value_idr:17306174652,semi:false},
+      {name:"Consumable",value_idr:5563887525,semi:false},
+      {name:"Salary & Allowance",value_idr:29263467774,semi:false},
+      {name:"Professional Service",value_idr:1196000000,semi:false},
+      {name:"Rental",value_idr:303400000,semi:false},
+      {name:"Contract Service",value_idr:6216693498,semi:false},
+      {name:"Transportation",value_idr:1571749417,semi:false},
+      {name:"Other Opex",value_idr:6543869111,semi:false},
+      {name:"Insurance",value_idr:7761040800,semi:true},
+      {name:"Management Fees",value_idr:2889000000,semi:true} ] },
+    { code:"MRPR", full_name:"Medco Ratch Power Riau", mw:275.0, usd_per_kw_yr:45.0, controllable_om_idr:204183800634, cost_blocks:[
+      {name:"Maintenance Service Agreement",value_idr:83911628333,semi:false},
+      {name:"Maintenance Cost",value_idr:33255962226,semi:false},
+      {name:"Consumable",value_idr:194250000,semi:false},
+      {name:"Salary & Allowance",value_idr:14255577282,semi:false},
+      {name:"Professional Service",value_idr:8769958225,semi:false},
+      {name:"Rental",value_idr:5970366018,semi:false},
+      {name:"Contract Service",value_idr:7853200467,semi:false},
+      {name:"Transportation",value_idr:3970764000,semi:false},
+      {name:"Other Opex",value_idr:14739704684,semi:false},
+      {name:"Insurance",value_idr:29762389400,semi:true},
+      {name:"Management Fees",value_idr:1500000000,semi:true} ] },
+  ]
+};
+const fx = FLEET.fx_2026;
+const rpBn = (idr) => (idr / 1e9).toFixed(1);
+const rpBn2 = (idr) => (idr / 1e9).toFixed(2);
+const usdKw = (idr, mw) => idr / (mw * 1000) / fx;
+const fmt = (n) => n.toLocaleString("en-US");
+
+/* L4 family catalog: [family, driverType, share-of-block] — standard driver groupings */
+const DRV = { throughput:"throughput", event:"event", population:"population", headcount:"headcount", contract:"contract" };
+const DRV_FORMULA = {
+  throughput: "dose/rate × volume treated → Qty × Unit Rate × FX",
+  event: "events/yr × charge per event × Unit Rate",
+  population: "equipment count × charge × (1 / change-interval)",
+  headcount: "FTE × fully-loaded cost per FTE",
+  contract: "contracted value × escalation (lump, justify basis)"
+};
+const L4 = {
+  "Maintenance Service Agreement": [["LTSA fixed fee","contract",0.70],["LTSA variable — fired-hours / starts","throughput",0.30]],
+  "Maintenance Cost": [["Planned outage materials & parts","event",0.45],["Routine spares & wear parts","population",0.35],["Predictive / condition monitoring","contract",0.20]],
+  "Consumable": [["Disinfection / oxidants","throughput",0.34],["Coagulants & flocculants","throughput",0.18],["Boiler / HRSG water chemistry","throughput",0.18],["Lubricants & greases","population",0.16],["Gases & lab reagents","throughput",0.14]],
+  "Salary & Allowance": [["Base salary — O&M headcount","headcount",0.68],["Allowances & shift premium","headcount",0.22],["Overtime","headcount",0.10]],
+  "Professional Service": [["Engineering & technical advisory","contract",0.50],["Audit, legal & compliance","contract",0.30],["Permitting & certification","event",0.20]],
+  "Rental": [["Equipment & tooling rental","contract",0.60],["Vehicles & site facilities","contract",0.40]],
+  "Contract Service": [["Security & site services","contract",0.40],["Cleaning & grounds","contract",0.30],["Specialist field services","event",0.30]],
+  "Transportation": [["Fuel & vehicle running","throughput",0.50],["Logistics & freight","event",0.50]],
+  "Other Opex": [["Travel & subsistence","headcount",0.40],["Office & admin","contract",0.35],["Misc operating","contract",0.25]],
+  "Insurance": [["Property & machinery breakdown","contract",1.00]],
+  "Management Fees": [["Group management fee","contract",1.00]],
+};
+/* representative L5 item per family: {item, uom, rate_idr, freq, basis, usd} (qty back-solved from family value) */
+const ITEM = {
+  "Disinfection / oxidants": {item:"Sodium Hypochlorite 10%", uom:"drum", rate:2750000, freq:1, basis:"vendor quote"},
+  "Coagulants & flocculants": {item:"PAC 250-AN coagulant", uom:"kg", rate:9500, freq:1, basis:"vendor quote"},
+  "Boiler / HRSG water chemistry": {item:"O2 scavenger + corr. inhibitor", uom:"kg", rate:42000, freq:1, basis:"contract"},
+  "Lubricants & greases": {item:"Turbine lube oil ISO-VG32", uom:"litre", rate:38000, freq:1, basis:"market"},
+  "Gases & lab reagents": {item:"N2 / lab reagent pack", uom:"bottle", rate:1200000, freq:1, basis:"market", usd:true},
+  "Planned outage materials & parts": {item:"Hot-gas-path parts set", uom:"set", rate:1850000000, freq:1, basis:"OEM quote", usd:true},
+  "Routine spares & wear parts": {item:"Filters, seals, bearings", uom:"lot", rate:120000000, freq:4, basis:"run-rate"},
+  "Predictive / condition monitoring": {item:"Vibration / oil-analysis svc", uom:"month", rate:85000000, freq:12, basis:"contract"},
+  "LTSA fixed fee": {item:"LTSA fixed capacity fee", uom:"month", rate:0, freq:12, basis:"contract"},
+  "LTSA variable — fired-hours / starts": {item:"Per fired-hour charge", uom:"EOH", rate:0, freq:1, basis:"contract"},
+  "Base salary — O&M headcount": {item:"O&M staff — base", uom:"FTE-yr", rate:0, freq:1, basis:"HR run-rate"},
+  "Allowances & shift premium": {item:"Shift & field allowance", uom:"FTE-yr", rate:0, freq:1, basis:"HR policy"},
+  "Overtime": {item:"Overtime hours", uom:"hr", rate:95000, freq:1, basis:"run-rate"},
+};
+function l5lines(asset, blockName) {
+  const blk = asset.cost_blocks.find(b => b.name === blockName);
+  if (!blk) return [];
+  const fams = L4[blockName] || [[blockName, "contract", 1.0]];
+  let bc = 1;
+  const out = [];
+  fams.forEach(([fam, drv, share]) => {
+    const famVal = blk.value_idr * share;
+    if (famVal < 1) return;
+    const hint = ITEM[fam] || {item: fam, uom:"lot", rate:0, freq:1, basis:"run-rate"};
+    let rate = hint.rate, freq = hint.freq || 1, qty;
+    if (!rate) { // lump / headcount: present as 1 × freq × derived-rate
+      rate = Math.round(famVal / freq); qty = 1;
+    } else {
+      qty = Math.max(1, Math.round(famVal / (rate * freq)));
+    }
+    const value = qty * freq * rate; // ~ famVal
+    out.push({
+      fam, drv, item: hint.item, uom: hint.uom, qty, freq,
+      rate, fxlbl: hint.usd ? "USD" : "IDR", basis: hint.basis,
+      bc: asset.code + "-" + blockCode(blockName) + "-" + String(bc++).padStart(2,"0"),
+      value
+    });
+  });
+  return out;
+}
+function blockCode(name){
+  const m={"Maintenance Service Agreement":"MSA","Maintenance Cost":"MNT","Consumable":"CON","Salary & Allowance":"SAL","Professional Service":"PRO","Rental":"RNT","Contract Service":"CSV","Transportation":"TRP","Other Opex":"OPX","Insurance":"INS","Management Fees":"MGT"};
+  return m[name]||"GEN";
+}
+
+/* cost matrix — benchmark each line to best NON-ZERO plant */
+const assetsBW = [...FLEET.assets].sort((a,b)=>a.usd_per_kw_yr-b.usd_per_kw_yr); // best->worst
+function buildMatrix(){
+  const totals={},semi={},names=[],seen=new Set();
+  for(const a of FLEET.assets) for(const b of a.cost_blocks){
+    totals[b.name]=(totals[b.name]||0)+b.value_idr; if(b.semi)semi[b.name]=true;
+    if(!seen.has(b.name)){seen.add(b.name);names.push(b.name);}
+  }
+  names.sort((x,y)=>totals[y]-totals[x]);
+  return names.map(name=>{
+    const raw=assetsBW.map(a=>{const b=a.cost_blocks.find(x=>x.name===name);const v=b?b.value_idr:0;return{code:a.code,mw:a.mw,value_idr:v,usd:usdKw(v,a.mw)};});
+    const nz=raw.filter(c=>c.usd>0);
+    const best=nz.length?Math.min(...nz.map(c=>c.usd)):0;
+    const best_code=(nz.find(c=>c.usd===best)||raw[0]).code;
+    let gapTot=0;
+    const cells=raw.map(c=>{const bench=best*c.mw*1000*fx;const gap=Math.max(0,c.value_idr-bench);gapTot+=gap;return{...c,is_best:c.usd===best&&c.usd>0,gap_idr:gap};});
+    return{block:name,semi:!!semi[name],best,best_code,cells,total_gap_idr:gapTot};
+  });
+}
+const MATRIX=buildMatrix();
+const fleetTotal=FLEET.assets.reduce((s,a)=>s+a.controllable_om_idr,0);
+const bestKw=Math.min(...assetsBW.map(a=>a.usd_per_kw_yr));
+const bestCode=assetsBW.find(a=>a.usd_per_kw_yr===bestKw).code;
+
+function fleetBestStake(cap){
+  const by={};let tot=0;
+  for(const a of assetsBW){const g=Math.max(0,a.usd_per_kw_yr-bestKw)*a.mw*1000*fx*cap;by[a.code]=g;tot+=g;}
+  return{tot,by};
+}
+function tone(usd,best,isBest){
+  if(isBest||best===0||usd===0)return["rgba(52,211,153,0.14)","var(--green)"];
+  const r=usd/best;
+  if(r<=1.15)return["rgba(52,211,153,0.14)","var(--green)"];
+  if(r<=1.6)return["rgba(224,169,59,0.14)","var(--amber)"];
+  return["rgba(248,113,106,0.14)","var(--red)"];
+}
+function dotColor(gapBn,isBest){return isBest?"var(--green)":(gapBn>=8?"var(--red)":"var(--amber)");}
+
+/* =================== STATE =================== */
+const S = { tab:1, cap:0.5, asset:"MEB", block:"Consumable", challenge:0 };
+
+/* =================== LAYER 1 =================== */
+function renderL1(){
+  const cap=S.cap, pct=Math.round(cap*100);
+  const head=fleetBestStake(cap);
+  let stretch=0; for(const r of MATRIX) stretch+=r.total_gap_idr*cap;
+  document.getElementById("l1pct").textContent=pct+"%";
+  document.getElementById("l1slider").value=pct;
+  document.getElementById("l1hero").innerHTML=
+    `Three of four gas plants run above ${bestCode}'s <span class="tealnum">$${bestKw.toFixed(0)}/kW-yr</span> best. `+
+    `Closing ${pct}% of the gap frees <span class="num">Rp ${rpBn(head.tot)} Bn</span>.`;
+  document.getElementById("l1sub").innerHTML=
+    `Controllable O&amp;M ex-fuel, 2026 budget, four real gas-CCGT assets (<b>Rp ${rpBn(fleetTotal)} Bn</b> total), `+
+    `each cost line benchmarked to its best-in-fleet peer. FX ${fmt(fx)}.`;
+  document.getElementById("l1real").textContent="Rp "+rpBn(head.tot)+" Bn";
+  document.getElementById("l1realn").textContent="realistic · match the best plant ("+bestCode+")";
+  document.getElementById("l1stretch").textContent="Rp "+rpBn(stretch)+" Bn";
+
+  // strip
+  document.getElementById("l1strip").innerHTML=assetsBW.map(a=>{
+    const gap=head.by[a.code]||0, gBn=gap/1e9, isBest=a.code===bestCode;
+    const col=dotColor(gBn,isBest);
+    return `<div class="scard" onclick="drillTo2('${a.code}')">
+      <div class="row1"><span class="code">${a.code}</span><span class="dot" style="background:${col};box-shadow:0 0 8px ${col}"></span></div>
+      <div class="name">${a.full_name} · ${a.mw} MW</div>
+      <div class="kw" style="color:${isBest?'var(--green)':'var(--text)'}">$${a.usd_per_kw_yr.toFixed(1)}<span>/kW-yr</span></div>
+      <div class="sub2">Rp ${rpBn(a.controllable_om_idr)} Bn controllable</div>
+      <div class="badge" style="color:${col}">${isBest?"● best-in-fleet":"▲ Rp "+rpBn(gap)+" Bn at stake"}</div>
+    </div>`;
+  }).join("");
+
+  // heatmap
+  document.getElementById("l1thead").innerHTML=
+    `<tr><th class="l">Cost line (L3)</th>`+
+    assetsBW.map(a=>`<th>${a.code}<div class="mono" style="color:var(--muted-2);font-weight:400">$${a.usd_per_kw_yr.toFixed(0)}/kW</div></th>`).join("")+
+    `<th>Stretch<div class="mono" style="color:var(--muted-2);font-weight:400">Rp Bn</div></th></tr>`;
+  document.getElementById("l1tbody").innerHTML=MATRIX.map(row=>{
+    const tds=assetsBW.map(a=>{const c=row.cells.find(x=>x.code===a.code);const[bg,fg]=tone(c.usd,row.best,c.is_best);
+      return `<td style="background:${bg};color:${fg};font-weight:${c.is_best?700:500}">$${c.usd.toFixed(1)}</td>`;}).join("");
+    return `<tr class="clickable" onclick="drillTo3Block('${row.block}')"><td class="l">${row.block}${row.semi?'<span class="semi">semi-committed</span>':""}</td>${tds}<td style="color:var(--muted)">${(row.total_gap_idr*cap/1e9).toFixed(1)}</td></tr>`;
+  }).join("")+
+    `<tr class="total"><td class="l">Total controllable</td>`+
+    assetsBW.map(a=>`<td>$${a.usd_per_kw_yr.toFixed(1)}</td>`).join("")+
+    `<td style="color:var(--amber)">${rpBn(stretch)}</td></tr>`;
+
+  // copilot
+  const worst=[...assetsBW].sort((a,b)=>(head.by[b.code]||0)-(head.by[a.code]||0))[0];
+  const topLines=[...MATRIX].sort((a,b)=>b.total_gap_idr-a.total_gap_idr).slice(0,3);
+  document.getElementById("l1quote").innerHTML=
+    `At ${pct}% capture the fleet frees <b style="color:var(--gold)">Rp ${rpBn(head.tot)} Bn</b> by bringing every plant to ${bestCode}'s $${bestKw.toFixed(0)}/kW-yr. `+
+    `<b>${worst.code}</b> carries the largest gap (Rp ${rpBn(head.by[worst.code])} Bn). The money concentrates in three cost lines below.`;
+  document.getElementById("l1acts").innerHTML=topLines.map((r,i)=>
+    `<div class="act"><div class="i">0${i+1}</div><div><div class="t">${r.block} <span class="pill red">Rp ${rpBn(r.total_gap_idr)} Bn gap</span></div>`+
+    `<div class="d">Best is ${r.best_code} at $${r.best.toFixed(1)}/kW. <span class="link" onclick="drillTo3Block('${r.block}')">challenge at L5 →</span></div></div></div>`).join("");
+}
+
+/* =================== LAYER 2 =================== */
+function renderL2(){
+  const a=FLEET.assets.find(x=>x.code===S.asset);
+  document.getElementById("l2pills").innerHTML=assetsBW.map(x=>
+    `<button class="ap ${x.code===S.asset?'on':''}" onclick="setAsset('${x.code}')">${x.code}</button>`).join("");
+  const gapKw=Math.max(0,a.usd_per_kw_yr-bestKw);
+  const gapIdr=gapKw*a.mw*1000*fx;
+  const isBest=a.code===bestCode;
+  document.getElementById("l2hero").innerHTML=
+    `<b>${a.full_name}</b> runs at <span class="tealnum">$${a.usd_per_kw_yr.toFixed(1)}/kW-yr</span>`+
+    (isBest?` — <span class="num">best-in-fleet</span>.`:` — <span class="num">Rp ${rpBn(gapIdr)} Bn</span> above ${bestCode}'s $${bestKw.toFixed(0)}.`);
+  document.getElementById("l2stats").innerHTML=
+    `<div class="stat"><div class="k">Capacity</div><div class="v">${a.mw} MW</div></div>`+
+    `<div class="stat"><div class="k">Controllable O&M</div><div class="v">Rp ${rpBn(a.controllable_om_idr)} Bn</div></div>`+
+    `<div class="stat"><div class="k">$/kW-yr</div><div class="v" style="color:${isBest?'var(--green)':'var(--text)'}">$${a.usd_per_kw_yr.toFixed(1)}</div></div>`+
+    `<div class="stat"><div class="k">Gap to best</div><div class="v" style="color:${isBest?'var(--green)':'var(--amber)'}">${isBest?'—':'Rp '+rpBn(gapIdr)+' Bn'}</div></div>`;
+
+  // per-block rows with gap vs fleet-best (non-zero) on that line
+  const rows=a.cost_blocks.map(b=>{
+    const m=MATRIX.find(r=>r.block===b.name);
+    const cell=m.cells.find(c=>c.code===a.code);
+    const u=usdKw(b.value_idr,a.mw);
+    const[bg,fg]=tone(u,m.best,cell.is_best);
+    const maxU=Math.max(...m.cells.map(c=>c.usd));
+    return {b, m, cell, u, bg, fg, maxU};
+  }).sort((x,y)=>y.cell.gap_idr-x.cell.gap_idr);
+
+  document.getElementById("l2thead").innerHTML=
+    `<tr><th class="l" style="width:30px"></th><th class="l">Cost block (L3)</th><th>$/kW-yr</th><th>Fleet best</th><th>Rp Bn</th><th>Gap Rp Bn</th><th class="l" style="width:150px">vs fleet</th><th></th></tr>`;
+  document.getElementById("l2tbody").innerHTML=rows.map((r,i)=>{
+    const fams=L4[r.b.name]||[[r.b.name,"contract",1]];
+    const famRows=fams.map(([fam,drv,share])=>{
+      const fv=r.b.value_idr*share;
+      return `<tr class="l4row hide" data-parent="${i}"><td></td><td class="l fam">└ ${fam}</td><td><span class="drv">${drv}</span></td><td colspan="2" style="text-align:left;color:var(--muted);font-family:var(--mono);font-size:10px">${DRV_FORMULA[drv]}</td><td>${rpBn2(fv)}</td><td></td><td><span class="link" onclick="event.stopPropagation();drillTo3('${r.b.name.replace(/'/g,"\\'")}')">L5 →</span></td></tr>`;
+    }).join("");
+    const barW=r.maxU>0?Math.round(r.u/r.maxU*100):0;
+    return `<tr class="clickable" onclick="toggleL4(${i})"><td class="l"><span class="caret" id="car${i}">▸</span></td>`+
+      `<td class="l">${r.b.name}${r.b.semi?'<span class="semi">semi</span>':""}</td>`+
+      `<td style="color:${r.fg};font-weight:600">$${r.u.toFixed(1)}</td>`+
+      `<td style="color:var(--muted)">$${r.m.best.toFixed(1)} <span class="mono" style="font-size:9px">${r.m.best_code}</span></td>`+
+      `<td>${rpBn(r.b.value_idr)}</td>`+
+      `<td style="color:${r.cell.gap_idr>0?'var(--amber)':'var(--muted-2)'};font-weight:600">${r.cell.gap_idr>0?rpBn(r.cell.gap_idr):'—'}</td>`+
+      `<td class="l"><span class="bar"><i style="width:${barW}%;background:${r.fg}"></i></span></td>`+
+      `<td><span class="link" onclick="event.stopPropagation();drillTo3('${r.b.name.replace(/'/g,"\\'")}')">L5 →</span></td></tr>`+
+      famRows;
+  }).join("");
+
+  // copilot
+  document.getElementById("l2tag").textContent=a.code;
+  const top=rows.filter(r=>r.cell.gap_idr>0).slice(0,3);
+  document.getElementById("l2quote").innerHTML= isBest
+    ? `${a.code} is the fleet benchmark at $${a.usd_per_kw_yr.toFixed(1)}/kW-yr. Its cost lines set the target the other plants are challenged against — protect what makes it cheap.`
+    : `${a.code}'s gap to ${bestCode} is concentrated: <b>${top.map(t=>t.b.name).join(", ")}</b> account for the bulk of the Rp ${rpBn(gapIdr)} Bn. Expand each block to see the L4 driver families to challenge.`;
+  document.getElementById("l2acts").innerHTML=(top.length?top:rows.slice(0,3)).map((r,i)=>
+    `<div class="act"><div class="i">0${i+1}</div><div><div class="t">${r.b.name} ${r.cell.gap_idr>0?`<span class="pill amber" style="background:rgba(224,169,59,0.14);color:var(--amber)">Rp ${rpBn(r.cell.gap_idr)} Bn</span>`:''}</div>`+
+    `<div class="d">Runs $${r.u.toFixed(1)}/kW vs best $${r.m.best.toFixed(1)} (${r.m.best_code}). <span class="link" onclick="drillTo3('${r.b.name}')">build L5 →</span></div></div></div>`).join("");
+}
+function toggleL4(i){
+  const c=document.getElementById("car"+i);
+  const open=c.classList.toggle("open");
+  document.querySelectorAll('#l2tbody tr.l4row[data-parent="'+i+'"]').forEach(r=>r.classList.toggle("hide",!open));
+}
+
+/* =================== LAYER 3 =================== */
+function renderL3(){
+  const a=FLEET.assets.find(x=>x.code===S.asset);
+  if(!a.cost_blocks.find(b=>b.name===S.block)) S.block="Consumable";
+  document.getElementById("l3pills").innerHTML=assetsBW.map(x=>
+    `<button class="ap ${x.code===S.asset?'on':''}" onclick="setAsset('${x.code}')">${x.code}</button>`).join("");
+  document.getElementById("l3blocks").innerHTML=a.cost_blocks.map(b=>
+    `<button class="ap ${b.name===S.block?'on':''}" style="font-size:10px;padding:5px 10px" onclick="setBlock('${b.name}')">${b.name}</button>`).join("");
+
+  const lines=l5lines(a,S.block);
+  const blk=a.cost_blocks.find(b=>b.name===S.block);
+  const ch=S.challenge/100;
+  document.getElementById("l3pct").textContent=Math.round(S.challenge)+"%";
+  document.getElementById("l3slider").value=S.challenge;
+
+  let before=0, after=0;
+  const rowsHtml=lines.map(L=>{
+    const v0=L.value, v1=L.value*(1-ch);
+    before+=v0; after+=v1;
+    const rateShown = L.fxlbl==="USD" ? "$"+fmt(Math.round(L.rate/fx)) : "Rp "+fmt(L.rate);
+    return `<tr><td class="l"><span class="drv">${L.drv}</span></td><td class="l">${L.item}<div class="mono" style="font-size:9px;color:var(--muted-2)">${L.fam}</div></td>`+
+      `<td class="mono">${L.uom}</td><td>${fmt(L.qty)}</td><td>${L.freq}</td><td>${rateShown}</td><td class="mono">${L.fxlbl}</td>`+
+      `<td>${rpBn2(v0)}</td><td style="color:var(--amber)">${rpBn2(v1)}</td>`+
+      `<td class="mono" style="font-size:10px;color:var(--teal)">${L.bc}</td><td class="mono" style="font-size:9px;color:var(--muted)">${L.basis}</td></tr>`;
+  }).join("");
+  const save=before-after;
+  document.getElementById("l3save").textContent="Rp "+rpBn2(save)+" Bn";
+  document.getElementById("l3after").textContent="Rp "+rpBn2(after)+" Bn";
+
+  const m=MATRIX.find(r=>r.block===S.block);
+  document.getElementById("l3hero").innerHTML=
+    `<b>${a.code}</b> · ${S.block} — <span class="tealnum">Rp ${rpBn2(blk.value_idr)} Bn</span> across ${lines.length} driver families`;
+  document.getElementById("l3sub").innerHTML=
+    `Every line resolves to <b>Qty × Freq × Unit Rate × FX</b> and carries a Budget Code that ties the budget to the SCM procurement package and the IPM weekly tracker. `+
+    `Fleet best on this line is ${m.best_code} at $${m.best.toFixed(1)}/kW. Drag the challenge dial to trim rates and quantities.`;
+  document.getElementById("l3thead").innerHTML=
+    `<tr><th class="l">Driver</th><th class="l">L5 item · family</th><th>UoM</th><th>Qty</th><th>Freq</th><th>Unit rate</th><th>FX</th><th>Budget Rp Bn</th><th>Challenged</th><th class="l">Budget code</th><th class="l">Basis</th></tr>`;
+  document.getElementById("l3tbody").innerHTML=rowsHtml+
+    `<tr class="total"><td class="l" colspan="7">Total — ${S.block}</td><td>${rpBn2(before)}</td><td style="color:var(--amber)">${rpBn2(after)}</td><td colspan="2" class="l" style="color:var(--green);font-family:var(--mono);font-size:10px">saves Rp ${rpBn2(save)} Bn</td></tr>`;
+  document.getElementById("l3foot").innerHTML=
+    `Illustrative driver decomposition built on the L0–L5 Template Driver standard (Consumable is the worked pilot). Rates/quantities are back-solved from the real block total for the mockup; the seed example (Sodium Hypochlorite 120 drum × Rp 2,750,000 = Rp 330 M) follows the standard.`;
+
+  document.getElementById("l3quote").innerHTML=
+    `${S.block} for ${a.code} is built from ${lines.length} driver families. A ${Math.round(S.challenge)}% challenge to unit rates and quantities releases <b style="color:var(--green)">Rp ${rpBn2(save)} Bn</b>. `+
+    `Throughput-driven families flex with the production plan; contract/lump lines need a basis-of-estimate justification.`;
+  document.getElementById("l3acts").innerHTML=lines.slice(0,3).map((L,i)=>
+    `<div class="act"><div class="i">0${i+1}</div><div><div class="t">${L.item} <span class="drv">${L.drv}</span></div>`+
+    `<div class="d">${DRV_FORMULA[L.drv]}. Basis: ${L.basis}. Budget code ${L.bc}.</div></div></div>`).join("");
+}
+
+/* =================== NAV / EVENTS =================== */
+function setTab(n){
+  S.tab=n;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab==String(n)));
+  document.getElementById("view1").classList.toggle("hide",n!==1);
+  document.getElementById("view2").classList.toggle("hide",n!==2);
+  document.getElementById("view3").classList.toggle("hide",n!==3);
+  const sub={1:"Cross-asset benchmark",2:"L3–L4 cost-block decomposition",3:"L5 driver build · Qty×Freq×Rate×FX"}[n];
+  document.getElementById("navsub").textContent=sub;
+  if(n===1)renderL1(); if(n===2)renderL2(); if(n===3)renderL3();
+}
+function setAsset(c){S.asset=c; if(S.tab===2)renderL2(); if(S.tab===3)renderL3();}
+function setBlock(b){S.block=b; renderL3();}
+function drillTo2(c){S.asset=c; setTab(2);}
+function drillTo3(b){S.block=b; setTab(3);}
+function drillTo3Block(b){S.block=b; setTab(3);}
+
+document.querySelectorAll(".tab").forEach(t=>{ if(!t.classList.contains("disabled")) t.onclick=()=>setTab(Number(t.dataset.tab)); });
+document.getElementById("l1slider").addEventListener("input",e=>{S.cap=Number(e.target.value)/100; syncSeg(); renderL1();});
+document.getElementById("l3slider").addEventListener("input",e=>{S.challenge=Number(e.target.value); renderL3();});
+document.querySelectorAll("#seg button").forEach(b=>b.onclick=()=>{S.cap=Number(b.dataset.cap)/100; syncSeg(); if(S.tab===1)renderL1();});
+function syncSeg(){const p=Math.round(S.cap*100);document.querySelectorAll("#seg button").forEach(b=>b.classList.toggle("on",Number(b.dataset.cap)===p));}
+
+renderL1();
+</script>
+</body>
+</html>
