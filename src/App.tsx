@@ -1,122 +1,48 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useEffect, useState } from 'react'
+import type { Fleet, Line, Decision } from './domain/types'
+import { loadFleet, loadElbLines } from './data/load'
+import { loadDecisions } from './domain/decision-store'
+import { FleetCockpit } from './screens/FleetCockpit'
+import { AssetDrill } from './screens/AssetDrill'
+import { ChallengeWorkspace } from './screens/ChallengeWorkspace'
+import { CostOutBridge } from './screens/CostOutBridge'
 
-function App() {
-  const [count, setCount] = useState(0)
+type Screen = 'fleet' | 'asset' | 'challenge' | 'bridge'
+
+export default function App() {
+  const [fleet, setFleet] = useState<Fleet | null>(null)
+  const [elbLines, setElbLines] = useState<Line[]>([])
+  const [decisions, setDecisions] = useState<Decision[]>(loadDecisions())
+  const [screen, setScreen] = useState<Screen>('fleet')
+  const [activeAsset, setActiveAsset] = useState<string>('MEB')
+
+  useEffect(() => { loadFleet().then(setFleet); loadElbLines().then(setElbLines) }, [])
+  if (!fleet) return <div className="p-8">Loading…</div>
+
+  const nav = (
+    <nav className="flex gap-2 p-3 border-b bg-white sticky top-0">
+      {(['fleet', 'asset', 'challenge', 'bridge'] as Screen[]).map((s) => (
+        <button key={s} onClick={() => setScreen(s)}
+          className={`px-3 py-1 rounded text-sm ${screen === s ? 'bg-[#006CB8] text-white' : 'bg-gray-100'}`}>
+          {s}
+        </button>
+      ))}
+    </nav>
+  )
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    <div className="min-h-screen bg-gray-50">
+      {nav}
+      <main className="p-6">
+        {screen === 'fleet' && <FleetCockpit fleet={fleet}
+          onDrill={(code) => { setActiveAsset(code); setScreen('asset') }} />}
+        {screen === 'asset' && <AssetDrill fleet={fleet} assetCode={activeAsset}
+          onChallenge={() => setScreen('challenge')} />}
+        {screen === 'challenge' && <ChallengeWorkspace assetCode={activeAsset}
+          lines={activeAsset === 'ELB' ? elbLines : []} fleet={fleet}
+          decisions={decisions} setDecisions={setDecisions} />}
+        {screen === 'bridge' && <CostOutBridge fleet={fleet} decisions={decisions} />}
+      </main>
+    </div>
   )
 }
-
-export default App
