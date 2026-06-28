@@ -19,7 +19,7 @@ export function AssetDrill({ fleet, assetCode, onChallenge }:
             <XAxis type="number" tickFormatter={(v) => `${(v / 1e9).toFixed(0)}`} />
             <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11 }} />
             <Tooltip formatter={((v: number) => [`Rp ${(Number(v) / 1e9).toFixed(2)} Bn`, 'value']) as never} />
-            <Bar dataKey="value_idr" fill="#006CB8" />
+            <Bar dataKey="value_idr" fill="#006CB8" isAnimationActive={false} activeBar={false} />
           </BarChart>
         </ResponsiveContainer>
       </div>

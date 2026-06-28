@@ -12,7 +12,7 @@ export function BenchmarkBar({ rows, benchmark }: { rows: Row[]; benchmark: numb
         <Tooltip formatter={((v: number, n: string) => n === 'usd_per_kw_yr' ? [`$${v}/kW-yr`, 'O&M'] : [String(v), n]) as never} />
         <ReferenceLine y={benchmark} stroke="#006CB8" strokeDasharray="4 4"
           label={{ value: `best-in-fleet $${benchmark}`, fill: '#006CB8', fontSize: 11 }} />
-        <Bar dataKey="usd_per_kw_yr">
+        <Bar dataKey="usd_per_kw_yr" isAnimationActive={false} activeBar={false}>
           {rows.map((r) => <Cell key={r.code} fill={color(r.severity)} />)}
         </Bar>
       </BarChart>
