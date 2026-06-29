@@ -1,11 +1,11 @@
 {
   "fx_2026": 16500,
-  "best_in_fleet_code": "MRPR",
+  "best_in_fleet_code": "Asset 1",
   "assets": [
     {
-      "code": "ELB",
-      "full_name": "Energi Listrik Batam",
-      "mw": 109.0,
+      "code": "Asset 2",
+      "full_name": "Asset 2",
+      "mw": 109,
       "technology": "Gas CCGT",
       "controllable_om_idr": 92381027483,
       "controllable_om_rp_bn": 92.38,
@@ -81,169 +81,13 @@
       ]
     },
     {
-      "code": "DEB",
-      "full_name": "Dalle Energy Batam",
-      "mw": 76.0,
-      "technology": "Gas CCGT",
-      "controllable_om_idr": 63864606977,
-      "controllable_om_rp_bn": 63.86,
-      "usd_per_kw_yr": 50.93,
-      "unit_scale": 1,
-      "cost_blocks": [
-        {
-          "name": "Maintenance Service Agreement",
-          "value_idr": 24049731279,
-          "value_rp_bn": 24.05,
-          "semi_committed": false
-        },
-        {
-          "name": "Maintenance Cost",
-          "value_idr": 15442101393,
-          "value_rp_bn": 15.44,
-          "semi_committed": false
-        },
-        {
-          "name": "Consumable",
-          "value_idr": 3107587025,
-          "value_rp_bn": 3.11,
-          "semi_committed": false
-        },
-        {
-          "name": "Salary & Allowance",
-          "value_idr": 341552581,
-          "value_rp_bn": 0.34,
-          "semi_committed": false
-        },
-        {
-          "name": "Professional Service",
-          "value_idr": 1166000000,
-          "value_rp_bn": 1.17,
-          "semi_committed": false
-        },
-        {
-          "name": "Rental",
-          "value_idr": 4000000,
-          "value_rp_bn": 0.0,
-          "semi_committed": false
-        },
-        {
-          "name": "Contract Service",
-          "value_idr": 1038000000,
-          "value_rp_bn": 1.04,
-          "semi_committed": false
-        },
-        {
-          "name": "Transportation",
-          "value_idr": 342888965,
-          "value_rp_bn": 0.34,
-          "semi_committed": false
-        },
-        {
-          "name": "Other Opex",
-          "value_idr": 848100000,
-          "value_rp_bn": 0.85,
-          "semi_committed": false
-        },
-        {
-          "name": "Insurance",
-          "value_idr": 7260990685,
-          "value_rp_bn": 7.26,
-          "semi_committed": true
-        },
-        {
-          "name": "Management Fees",
-          "value_idr": 10263655050,
-          "value_rp_bn": 10.26,
-          "semi_committed": true
-        }
-      ]
-    },
-    {
-      "code": "MEB",
-      "full_name": "Mitra Energi Batam",
-      "mw": 82.1,
-      "technology": "Gas CCGT",
-      "controllable_om_idr": 78615282777,
-      "controllable_om_rp_bn": 78.62,
-      "usd_per_kw_yr": 58.03,
-      "unit_scale": 1,
-      "cost_blocks": [
-        {
-          "name": "Maintenance Service Agreement",
-          "value_idr": 0,
-          "value_rp_bn": 0.0,
-          "semi_committed": false
-        },
-        {
-          "name": "Maintenance Cost",
-          "value_idr": 17306174652,
-          "value_rp_bn": 17.31,
-          "semi_committed": false
-        },
-        {
-          "name": "Consumable",
-          "value_idr": 5563887525,
-          "value_rp_bn": 5.56,
-          "semi_committed": false
-        },
-        {
-          "name": "Salary & Allowance",
-          "value_idr": 29263467774,
-          "value_rp_bn": 29.26,
-          "semi_committed": false
-        },
-        {
-          "name": "Professional Service",
-          "value_idr": 1196000000,
-          "value_rp_bn": 1.2,
-          "semi_committed": false
-        },
-        {
-          "name": "Rental",
-          "value_idr": 303400000,
-          "value_rp_bn": 0.3,
-          "semi_committed": false
-        },
-        {
-          "name": "Contract Service",
-          "value_idr": 6216693498,
-          "value_rp_bn": 6.22,
-          "semi_committed": false
-        },
-        {
-          "name": "Transportation",
-          "value_idr": 1571749417,
-          "value_rp_bn": 1.57,
-          "semi_committed": false
-        },
-        {
-          "name": "Other Opex",
-          "value_idr": 6543869111,
-          "value_rp_bn": 6.54,
-          "semi_committed": false
-        },
-        {
-          "name": "Insurance",
-          "value_idr": 7761040800,
-          "value_rp_bn": 7.76,
-          "semi_committed": true
-        },
-        {
-          "name": "Management Fees",
-          "value_idr": 2889000000,
-          "value_rp_bn": 2.89,
-          "semi_committed": true
-        }
-      ]
-    },
-    {
-      "code": "MRPR",
-      "full_name": "Medco Ratch Power Riau",
-      "mw": 275.0,
+      "code": "Asset 1",
+      "full_name": "Asset 1",
+      "mw": 275,
       "technology": "Gas CCGT",
       "controllable_om_idr": 204183800634,
       "controllable_om_rp_bn": 204.18,
-      "usd_per_kw_yr": 45.0,
+      "usd_per_kw_yr": 45,
       "unit_scale": 1000,
       "cost_blocks": [
         {
@@ -310,6 +154,84 @@
           "name": "Management Fees",
           "value_idr": 1500000000,
           "value_rp_bn": 1.5,
+          "semi_committed": true
+        }
+      ]
+    },
+    {
+      "code": "Asset 3",
+      "full_name": "Asset 3",
+      "mw": 158.1,
+      "technology": "Gas CCGT",
+      "controllable_om_idr": 142479889754,
+      "controllable_om_rp_bn": 142.48,
+      "usd_per_kw_yr": 54.62,
+      "unit_scale": 1,
+      "cost_blocks": [
+        {
+          "name": "Maintenance Service Agreement",
+          "value_idr": 24049731279,
+          "value_rp_bn": 24.05,
+          "semi_committed": false
+        },
+        {
+          "name": "Maintenance Cost",
+          "value_idr": 32748276045,
+          "value_rp_bn": 32.75,
+          "semi_committed": false
+        },
+        {
+          "name": "Consumable",
+          "value_idr": 8671474550,
+          "value_rp_bn": 8.67,
+          "semi_committed": false
+        },
+        {
+          "name": "Salary & Allowance",
+          "value_idr": 29605020355,
+          "value_rp_bn": 29.61,
+          "semi_committed": false
+        },
+        {
+          "name": "Professional Service",
+          "value_idr": 2362000000,
+          "value_rp_bn": 2.36,
+          "semi_committed": false
+        },
+        {
+          "name": "Rental",
+          "value_idr": 307400000,
+          "value_rp_bn": 0.31,
+          "semi_committed": false
+        },
+        {
+          "name": "Contract Service",
+          "value_idr": 7254693498,
+          "value_rp_bn": 7.25,
+          "semi_committed": false
+        },
+        {
+          "name": "Transportation",
+          "value_idr": 1914638382,
+          "value_rp_bn": 1.91,
+          "semi_committed": false
+        },
+        {
+          "name": "Other Opex",
+          "value_idr": 7391969111,
+          "value_rp_bn": 7.39,
+          "semi_committed": false
+        },
+        {
+          "name": "Insurance",
+          "value_idr": 15022031485,
+          "value_rp_bn": 15.02,
+          "semi_committed": true
+        },
+        {
+          "name": "Management Fees",
+          "value_idr": 13152655050,
+          "value_rp_bn": 13.15,
           "semi_committed": true
         }
       ]

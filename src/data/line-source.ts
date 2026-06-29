@@ -55,7 +55,7 @@ export function clearUploadedLines(code: string): void {
 export async function resolveLines(asset: Asset, fleet: Fleet): Promise<{ lines: Line[]; source: LineSource }> {
   const uploaded = loadUploadedLines(asset.code)
   if (uploaded?.length) return { lines: uploaded, source: 'uploaded' }
-  if (asset.code === 'ELB') {
+  if (asset.code === 'Asset 2') { // sanitised code for the plant with real sourced lines
     try {
       const real = await loadElbLines()
       if (real?.length) return { lines: real, source: 'real' }
