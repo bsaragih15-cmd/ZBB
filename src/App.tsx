@@ -11,8 +11,9 @@ import { AssetDrill } from './screens/AssetDrill'
 import { DriverWorkspace } from './screens/DriverWorkspace'
 import { ChallengeWorkspace } from './screens/ChallengeWorkspace'
 import { BoardPack } from './screens/BoardPack'
+import { Settings } from './screens/Settings'
 
-type Screen = 'cross-asset' | 'l3l4' | 'l5' | 'challenge' | 'board'
+type Screen = 'cross-asset' | 'l3l4' | 'l5' | 'challenge' | 'board' | 'settings'
 
 const NAV: { id: Screen; label: string }[] = [
   { id: 'cross-asset', label: '1 · Cross-asset' },
@@ -20,6 +21,7 @@ const NAV: { id: Screen; label: string }[] = [
   { id: 'l5', label: '3 · L5 per asset' },
   { id: 'challenge', label: '4 · Challenge' },
   { id: 'board', label: 'Board pack' },
+  { id: 'settings', label: 'Settings' },
 ]
 
 const BENCH: { label: string; mode: BenchmarkMode }[] = [
@@ -41,6 +43,7 @@ export default function App() {
   const [activeBlock, setActiveBlock] = useState<string>('Consumable')
   const [cap, setCap] = useState(0.5)
   const [benchMode, setBenchMode] = useState<BenchmarkMode>('absolute')
+  const [rev, setRev] = useState(0) // bumped on settings save to re-read localStorage-backed assumptions
   const [lineData, setLineData] = useState<{ lines: Line[]; source: LineSource }>({ lines: [], source: 'modeled' })
 
   useEffect(() => { loadFleet().then(setFleet) }, [])
@@ -66,42 +69,63 @@ export default function App() {
   const onClear = () => { clearUploadedLines(activeAsset); reloadLines() }
 
   const nav = (
-    <div className="nav">
+    <nav className="nav" aria-label="Primary">
       <div className="brand">
-        <span className="glyph" />
+        <span className="glyph" aria-hidden="true" />
         MPI Cost Cockpit <small>budgeting · stress-test</small>
       </div>
-      <div className="tabs">
+      <div className="tabs" role="tablist">
         {NAV.map((n) => (
-          <button key={n.id} className={`tab ${screen === n.id ? 'active' : ''}`} onClick={() => setScreen(n.id)}>
+          <button key={n.id} role="tab" aria-current={screen === n.id ? 'page' : undefined}
+            className={`tab ${screen === n.id ? 'active' : ''}`} onClick={() => setScreen(n.id)}>
             {n.label}
           </button>
         ))}
       </div>
       <div className="scen">
-        <span className="lbl">benchmark</span>
-        <div className="seg">
+        <span className="lbl" id="bench-lbl">benchmark</span>
+        <div className="seg" role="group" aria-labelledby="bench-lbl">
           {BENCH.map((b) => (
-            <button key={b.mode} className={benchMode === b.mode ? 'on' : ''}
+            <button key={b.mode} aria-pressed={benchMode === b.mode} className={benchMode === b.mode ? 'on' : ''}
               onClick={() => setBenchMode(b.mode)}>{b.label}</button>
           ))}
         </div>
-        <span className="lbl">ambition</span>
-        <div className="seg">
+        <span className="lbl" id="amb-lbl">ambition</span>
+        <div className="seg" role="group" aria-labelledby="amb-lbl">
           {AMBITION.map((a) => (
-            <button key={a.label} className={Math.round(cap * 100) === Math.round(a.cap * 100) ? 'on' : ''}
+            <button key={a.label} aria-pressed={Math.round(cap * 100) === Math.round(a.cap * 100)}
+              className={Math.round(cap * 100) === Math.round(a.cap * 100) ? 'on' : ''}
               onClick={() => setCap(a.cap)}>{a.label}</button>
           ))}
         </div>
       </div>
+    </nav>
+  )
+
+  const crumb = (label: string, to?: Screen) => to
+    ? <button onClick={() => setScreen(to)}>{label}</button>
+    : <span className="cur">{label}</span>
+  const sep = <span className="sep" aria-hidden="true">/</span>
+  const crumbs = (screen === 'l3l4' || screen === 'l5' || screen === 'challenge') && (
+    <div className="crumbs" aria-label="Breadcrumb">
+      {crumb('Cross-asset', 'cross-asset')}{sep}
+      {crumb(activeAsset, screen === 'l3l4' ? undefined : 'l3l4')}
+      {screen === 'l5' && <>{sep}{crumb(activeBlock)}</>}
+      {screen === 'challenge' && <>{sep}{crumb('Challenge')}</>}
     </div>
   )
+
+  const committed = decisions
+    .filter((d) => d.outcome !== 'defer' && d.committed_saving_idr > 0)
+    .reduce((s, d) => s + d.committed_saving_idr, 0)
 
   return (
     <div>
       {nav}
-      <div className="wrap">
+      <main className="wrap" key={rev}>
+        {crumbs}
         {screen === 'cross-asset' && <LandingPage fleet={fleet} cap={cap} onCap={setCap} benchMode={benchMode}
+          committed={committed}
           onDrill={(code) => { setActiveAsset(code); setScreen('l3l4') }} />}
         {screen === 'l3l4' && <AssetDrill fleet={fleet} assetCode={activeAsset} benchMode={benchMode}
           onChallenge={() => setScreen('challenge')}
@@ -113,7 +137,8 @@ export default function App() {
           lines={lineData.lines} source={lineData.source}
           decisions={decisions} setDecisions={setDecisions} onUpload={onUpload} onClear={onClear} />}
         {screen === 'board' && <BoardPack fleet={fleet} cap={cap} benchMode={benchMode} decisions={decisions} />}
-      </div>
+        {screen === 'settings' && <Settings onSaved={() => setRev((r) => r + 1)} />}
+      </main>
     </div>
   )
 }
