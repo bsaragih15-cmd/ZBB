@@ -1,19 +1,16 @@
 import { useEffect, useState } from 'react'
-import type { Fleet, Decision } from './domain/types'
+import type { Fleet } from './domain/types'
 import { loadFleet } from './data/load'
-import { loadDecisions, loadDecisionsRemote } from './domain/decision-store'
 import { LandingPage } from './screens/LandingPage'
 import { AssetDrill } from './screens/AssetDrill'
 import { DriverWorkspace } from './screens/DriverWorkspace'
-import { CostOutBridge } from './screens/CostOutBridge'
 
-type Screen = 'cross-asset' | 'l3l4' | 'l5' | 'bridge'
+type Screen = 'cross-asset' | 'l3l4' | 'l5'
 
 const NAV: { id: Screen; label: string }[] = [
   { id: 'cross-asset', label: '1 · Cross-asset' },
   { id: 'l3l4', label: '2 · L3–L4 per asset' },
   { id: 'l5', label: '3 · L5 per asset' },
-  { id: 'bridge', label: 'Cost-out bridge' },
 ]
 
 const AMBITION: { label: string; cap: number }[] = [
@@ -24,14 +21,12 @@ const AMBITION: { label: string; cap: number }[] = [
 
 export default function App() {
   const [fleet, setFleet] = useState<Fleet | null>(null)
-  const [decisions, setDecisions] = useState<Decision[]>(loadDecisions())
   const [screen, setScreen] = useState<Screen>('cross-asset')
   const [activeAsset, setActiveAsset] = useState<string>('MEB+DEB')
   const [activeBlock, setActiveBlock] = useState<string>('Consumable')
   const [cap, setCap] = useState(0.5)
 
   useEffect(() => { loadFleet().then(setFleet) }, [])
-  useEffect(() => { loadDecisionsRemote().then(setDecisions) }, [])
   if (!fleet) return <div className="wrap" style={{ color: 'var(--muted)' }}>Loading…</div>
 
   const nav = (
@@ -71,7 +66,6 @@ export default function App() {
           onDrillBlock={(b) => { setActiveBlock(b); setScreen('l5') }} />}
         {screen === 'l5' && <DriverWorkspace fleet={fleet} assetCode={activeAsset} block={activeBlock}
           onSelectAsset={setActiveAsset} onSelectBlock={setActiveBlock} />}
-        {screen === 'bridge' && <CostOutBridge fleet={fleet} decisions={decisions} cap={cap} onCap={setCap} />}
       </div>
     </div>
   )

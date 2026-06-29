@@ -2,9 +2,9 @@ import type { Decision, ZbbLever } from './types'
 
 /**
  * Realization model: not every committed rupiah lands, and not at the same time.
- * Each ZBB lever carries a typical realization probability and lead time. This
- * lets the cost-out bridge show committed vs *risk-adjusted* savings — the
- * number a CFO can actually bank — instead of treating every decision as certain.
+ * Each ZBB lever carries a typical realization probability and lead time, so
+ * committed savings can be reported as *risk-adjusted* — the number a CFO can
+ * actually bank — instead of treating every decision as certain.
  *
  * Probabilities reflect how defensible/contractually-clean each lever is:
  * eliminating a discretionary line is near-certain; rebuilding a scope or
