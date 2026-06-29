@@ -5,6 +5,9 @@ import {
   rpBn, rpBn2, usdKw, buildCockpitMatrix, sortedAssets, fleetBestKw, fleetBestCode,
   normalizedBenchUsd, tone, L4, DRV_FORMULA,
 } from '../domain/cockpit-model'
+import { loadYoY, yoyDelta, priorIdr, PRIOR_LABEL } from '../domain/prior-year'
+
+const yoyColor = (pct: number) => (pct > 0.1 ? 'var(--amber)' : pct > 0 ? 'var(--text)' : 'var(--green)')
 
 export function AssetDrill({ fleet, assetCode, onChallenge, onSelectAsset, onDrillBlock, benchMode = 'absolute' }:
   {
@@ -26,6 +29,11 @@ export function AssetDrill({ fleet, assetCode, onChallenge, onSelectAsset, onDri
   const gapKw = Math.max(0, a.usd_per_kw_yr - benchKw)
   const gapIdr = gapKw * a.mw * 1000 * fx
 
+  const yoy = loadYoY()
+  const prior2025Idr = a.cost_blocks.reduce((s, b) => s + priorIdr(b.name, b.value_idr, yoy), 0)
+  const priorKw = usdKw(prior2025Idr, a.mw, fx)
+  const assetPct = prior2025Idr > 0 ? a.controllable_om_idr / prior2025Idr - 1 : 0
+
   const drill = (block: string) => (onDrillBlock ? onDrillBlock(block) : onChallenge())
 
   const rows = a.cost_blocks.map((b) => {
@@ -34,7 +42,9 @@ export function AssetDrill({ fleet, assetCode, onChallenge, onSelectAsset, onDri
     const u = usdKw(b.value_idr, a.mw, fx)
     const [bg, fg] = tone(u, m.best, cell.is_best)
     const maxU = Math.max(...m.cells.map((c) => c.usd))
-    return { b, m, cell, u, bg, fg, maxU }
+    const dy = yoyDelta(b.name, b.value_idr, yoy)
+    const priorU = usdKw(dy.prior_idr, a.mw, fx)
+    return { b, m, cell, u, bg, fg, maxU, dy, priorU }
   }).sort((x, y) => y.cell.gap_idr - x.cell.gap_idr)
 
   const top = rows.filter((r) => r.cell.gap_idr > 0).slice(0, 3)
@@ -60,6 +70,8 @@ export function AssetDrill({ fleet, assetCode, onChallenge, onSelectAsset, onDri
           <div className="stat"><div className="k">Controllable O&amp;M</div><div className="v">Rp {rpBn(a.controllable_om_idr)} Bn</div></div>
           <div className="stat"><div className="k">$/kW-yr</div><div className="v" style={{ color: isBest ? 'var(--green)' : 'var(--text)' }}>${a.usd_per_kw_yr.toFixed(1)}</div></div>
           <div className="stat"><div className="k">Gap to best</div><div className="v" style={{ color: isBest ? 'var(--green)' : 'var(--amber)' }}>{isBest ? '—' : `Rp ${rpBn(gapIdr)} Bn`}</div></div>
+          <div className="stat" title={PRIOR_LABEL}><div className="k">2025 $/kW-yr</div><div className="v" style={{ color: 'var(--muted)' }}>${priorKw.toFixed(1)}</div></div>
+          <div className="stat" title={PRIOR_LABEL}><div className="k">Submitted vs 2025</div><div className="v" style={{ color: yoyColor(assetPct) }}>{assetPct >= 0 ? '+' : ''}{(assetPct * 100).toFixed(1)}%</div></div>
         </div>
 
         <div className="panel" style={{ marginTop: 16 }}>
@@ -70,7 +82,10 @@ export function AssetDrill({ fleet, assetCode, onChallenge, onSelectAsset, onDri
               <thead>
                 <tr>
                   <th className="l" style={{ width: 30 }} /><th className="l">Cost block (L3)</th>
-                  <th>$/kW-yr</th><th>Fleet best</th><th>Rp Bn</th><th>Gap Rp Bn</th>
+                  <th title={PRIOR_LABEL} style={{ color: 'var(--muted)' }}>2025 $/kW</th>
+                  <th>2026 $/kW</th>
+                  <th title="Increase the 2026 submission carries over the modelled 2025 baseline">Δ vs '25</th>
+                  <th>Fleet best</th><th>Rp Bn</th><th>Gap Rp Bn</th>
                   <th className="l" style={{ width: 150 }}>vs fleet</th><th />
                 </tr>
               </thead>
@@ -83,7 +98,9 @@ export function AssetDrill({ fleet, assetCode, onChallenge, onSelectAsset, onDri
                       <tr className="clickable" onClick={() => toggle(i)}>
                         <td className="l"><span className={`caret ${open.has(i) ? 'open' : ''}`}>▸</span></td>
                         <td className="l">{r.b.name}{r.b.semi_committed && <span className="semi">semi</span>}</td>
+                        <td style={{ color: 'var(--muted)' }}>${r.priorU.toFixed(1)}</td>
                         <td style={{ color: r.fg, fontWeight: 600 }}>${r.u.toFixed(1)}</td>
+                        <td title={`+Rp ${rpBn2(r.dy.delta_idr)} Bn vs 2025`} style={{ color: yoyColor(r.dy.pct), fontWeight: 600 }}>{r.dy.pct >= 0 ? '+' : ''}{(r.dy.pct * 100).toFixed(1)}%</td>
                         <td style={{ color: 'var(--muted)' }}>${r.m.best.toFixed(1)} <span className="mono" style={{ fontSize: 9 }}>{r.m.best_code}</span></td>
                         <td>{rpBn(r.b.value_idr)}</td>
                         <td style={{ color: r.cell.gap_idr > 0 ? 'var(--amber)' : 'var(--muted-2)', fontWeight: 600 }}>{r.cell.gap_idr > 0 ? rpBn(r.cell.gap_idr) : '—'}</td>
@@ -95,8 +112,9 @@ export function AssetDrill({ fleet, assetCode, onChallenge, onSelectAsset, onDri
                           <td /><td className="l fam">└ {fam}</td>
                           <td><span className="drv">{drv}</span></td>
                           <td colSpan={2} style={{ textAlign: 'left', color: 'var(--muted)', fontFamily: 'var(--mono)', fontSize: 10 }}>{DRV_FORMULA[drv]}</td>
+                          <td />
                           <td>{rpBn2(r.b.value_idr * (fams.find((f) => f[0] === fam)![2]))}</td>
-                          <td /><td><button className="link" onClick={(e) => { e.stopPropagation(); drill(r.b.name) }}>L5 →</button></td>
+                          <td colSpan={2} /><td><button className="link" onClick={(e) => { e.stopPropagation(); drill(r.b.name) }}>L5 →</button></td>
                         </tr>
                       ))}
                     </Fragment>
@@ -106,7 +124,7 @@ export function AssetDrill({ fleet, assetCode, onChallenge, onSelectAsset, onDri
             </table>
           </div>
         </div>
-        <div className="foot">L4 families are the standard driver groupings each block must resolve to. Each family carries one driver type that sets its L5 math.</div>
+        <div className="foot">L4 families are the standard driver groupings each block must resolve to. Each family carries one driver type that sets its L5 math. <b>2025 $/kW</b> and <b>Δ vs '25</b> use a modelled per-block YoY baseline (both years at 2026 FX, real terms) — upload 2025 actuals to replace.</div>
         <button className="tab active" style={{ marginTop: 14 }} onClick={onChallenge}>Challenge {a.code} lines →</button>
       </div>
 
