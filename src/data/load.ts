@@ -1,5 +1,6 @@
 import type { Fleet, Asset, CostBlock } from '../domain/types'
 import type { Line } from '../domain/types'
+import { fetchFleetFromSupabase } from './remote'
 
 /**
  * MEB and DEB share the Batam site, O&M crew, and management overhead, so the
@@ -45,6 +46,14 @@ export function parseFleet(raw: any): Fleet {
 }
 
 export async function loadFleet(): Promise<Fleet> {
+  // Prefer the shared Supabase backend; fall back to the bundled static JSON
+  // when Supabase is unconfigured or unreachable.
+  try {
+    const remote = await fetchFleetFromSupabase()
+    if (remote) return parseFleet(remote)
+  } catch (e) {
+    console.warn('[zbb] remote fleet load failed, using static JSON', e)
+  }
   const res = await fetch('/data/fleet.json')
   return parseFleet(await res.json())
 }
