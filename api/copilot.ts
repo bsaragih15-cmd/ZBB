@@ -1,18 +1,17 @@
 import Anthropic from '@anthropic-ai/sdk'
 
 /**
- * AI Cost Copilot — Vercel Edge function.
+ * AI Cost Copilot — Vercel Node serverless function (streaming).
  *
  * Streams Claude's answer to a budget-challenge question. The client sends the
  * conversation plus a compact, pre-computed grounding context (fleet benchmark
  * matrix, the active view, flagged lines) so Claude reasons over real rupiah
  * figures rather than hallucinating them — no tool round-trip needed.
  *
- * Requires the ANTHROPIC_API_KEY env var (set in Vercel project settings,
- * server-only — never exposed to the browser).
+ * Runs on the Node runtime (the Anthropic SDK pulls in node:fs/node:path, which
+ * the Edge runtime rejects). Requires the server-only ANTHROPIC_API_KEY env var
+ * set in the Vercel project — never exposed to the browser.
  */
-export const config = { runtime: 'edge' }
-
 const MODEL = 'claude-opus-4-8'
 
 const SYSTEM = `You are the Cost Copilot inside MPI's zero-based budgeting (ZBB) cockpit — a cost-out stress-test tool for a fleet of Indonesian gas-fired power plants (ELB, DEB, MEB, MRPR). The tool benchmarks each plant's controllable O&M (ex-fuel) on a $/kW-yr basis against the best-in-fleet peer and quantifies the rupiah "gap to best".
@@ -31,23 +30,28 @@ interface Body {
   context?: string
 }
 
-export default async function handler(req: Request): Promise<Response> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default async function handler(req: any, res: any): Promise<void> {
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
+    res.status(405).send('Method not allowed')
+    return
   }
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
-    return new Response('Copilot is not configured (missing ANTHROPIC_API_KEY).', { status: 503 })
+    res.status(503).send('Copilot is not configured (missing ANTHROPIC_API_KEY).')
+    return
   }
 
   let body: Body
   try {
-    body = (await req.json()) as Body
+    body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
   } catch {
-    return new Response('Invalid JSON body', { status: 400 })
+    res.status(400).send('Invalid JSON body')
+    return
   }
-  if (!body.messages?.length) {
-    return new Response('No messages provided', { status: 400 })
+  if (!body?.messages?.length) {
+    res.status(400).send('No messages provided')
+    return
   }
 
   const anthropic = new Anthropic({ apiKey })
@@ -55,33 +59,24 @@ export default async function handler(req: Request): Promise<Response> {
     ? `${SYSTEM}\n\n=== CONTEXT (live figures from the cockpit) ===\n${body.context}`
     : SYSTEM
 
-  const encoder = new TextEncoder()
-  const stream = new ReadableStream({
-    async start(controller) {
-      try {
-        const ai = anthropic.messages.stream({
-          model: MODEL,
-          max_tokens: 1500,
-          system,
-          messages: body.messages,
-        })
-        for await (const event of ai) {
-          if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-            controller.enqueue(encoder.encode(event.delta.text))
-          }
-        }
-        controller.close()
-      } catch (err) {
-        controller.enqueue(encoder.encode(`\n\n[Copilot error: ${(err as Error).message}]`))
-        controller.close()
-      }
-    },
-  })
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+  res.setHeader('Cache-Control', 'no-cache, no-transform')
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'no-cache, no-transform',
-    },
-  })
+  try {
+    const stream = anthropic.messages.stream({
+      model: MODEL,
+      max_tokens: 1500,
+      system,
+      messages: body.messages,
+    })
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        res.write(event.delta.text)
+      }
+    }
+    res.end()
+  } catch (err) {
+    res.write(`\n\n[Copilot error: ${(err as Error).message}]`)
+    res.end()
+  }
 }
