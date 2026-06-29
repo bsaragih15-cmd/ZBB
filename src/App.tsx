@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react'
 import type { Fleet } from './domain/types'
+import type { BenchmarkMode } from './domain/cockpit-model'
 import { loadFleet } from './data/load'
 import { LandingPage } from './screens/LandingPage'
 import { AssetDrill } from './screens/AssetDrill'
 import { DriverWorkspace } from './screens/DriverWorkspace'
 
 type Screen = 'cross-asset' | 'l3l4' | 'l5'
+
+const BENCH: { label: string; mode: BenchmarkMode }[] = [
+  { label: 'Absolute', mode: 'absolute' },
+  { label: 'Like-for-like', mode: 'normalized' },
+]
 
 const NAV: { id: Screen; label: string }[] = [
   { id: 'cross-asset', label: '1 · Cross-asset' },
@@ -25,6 +31,7 @@ export default function App() {
   const [activeAsset, setActiveAsset] = useState<string>('MEB+DEB')
   const [activeBlock, setActiveBlock] = useState<string>('Consumable')
   const [cap, setCap] = useState(0.5)
+  const [benchMode, setBenchMode] = useState<BenchmarkMode>('absolute')
 
   useEffect(() => { loadFleet().then(setFleet) }, [])
   if (!fleet) return <div className="wrap" style={{ color: 'var(--muted)' }}>Loading…</div>
@@ -43,6 +50,13 @@ export default function App() {
         ))}
       </div>
       <div className="scen">
+        <span className="lbl">benchmark</span>
+        <div className="seg">
+          {BENCH.map((b) => (
+            <button key={b.mode} className={benchMode === b.mode ? 'on' : ''}
+              onClick={() => setBenchMode(b.mode)}>{b.label}</button>
+          ))}
+        </div>
         <span className="lbl">ambition</span>
         <div className="seg">
           {AMBITION.map((a) => (
@@ -58,9 +72,9 @@ export default function App() {
     <div>
       {nav}
       <div className="wrap">
-        {screen === 'cross-asset' && <LandingPage fleet={fleet} cap={cap} onCap={setCap}
+        {screen === 'cross-asset' && <LandingPage fleet={fleet} cap={cap} onCap={setCap} benchMode={benchMode}
           onDrill={(code) => { setActiveAsset(code); setScreen('l3l4') }} />}
-        {screen === 'l3l4' && <AssetDrill fleet={fleet} assetCode={activeAsset}
+        {screen === 'l3l4' && <AssetDrill fleet={fleet} assetCode={activeAsset} benchMode={benchMode}
           onChallenge={() => setScreen('l5')}
           onSelectAsset={setActiveAsset}
           onDrillBlock={(b) => { setActiveBlock(b); setScreen('l5') }} />}

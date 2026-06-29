@@ -87,15 +87,39 @@ export function l5lines(asset: Asset, blockName: string): L5Line[] {
   return out
 }
 
+/* ---------- benchmarking basis ---------- */
+export type BenchmarkMode = 'absolute' | 'normalized'
+
+/**
+ * Economies-of-scale elasticity for controllable O&M: larger plants run a lower
+ * $/kW-yr, so benchmarking a small laggard to a large best plant overstates the
+ * gap. We relax the benchmark for plants SMALLER than the best plant by
+ * (bestMw / mw) ^ elasticity, removing the size advantage. Larger-than-best
+ * plants are never given an excuse (factor floored at 1).
+ *
+ * 0.15 is a documented mid-range for O&M scale economies; tune as fleet data grows.
+ */
+export const SCALE_ELASTICITY = 0.15
+
+/** Size-fair benchmark $/kW for `mw`, given the best plant's $/kW and size. */
+export function normalizedBenchUsd(bestUsd: number, bestMw: number, mw: number, mode: BenchmarkMode): number {
+  if (mode === 'absolute' || !bestMw || !mw) return bestUsd
+  return bestUsd * Math.max(1, Math.pow(bestMw / mw, SCALE_ELASTICITY))
+}
+
 /* ---------- best-non-zero cross-asset matrix ---------- */
-export interface CockpitCell { code: string; mw: number; value_idr: number; usd: number; is_best: boolean; gap_idr: number }
+export interface CockpitCell { code: string; mw: number; value_idr: number; usd: number; is_best: boolean; gap_idr: number; bench_usd: number }
 export interface CockpitRow { block: string; semi: boolean; best: number; best_code: string; cells: CockpitCell[]; total_gap_idr: number }
 
 /** Assets sorted best -> worst by total $/kW-yr. */
 export const sortedAssets = (fleet: Fleet) => [...fleet.assets].sort((a, b) => a.usd_per_kw_yr - b.usd_per_kw_yr)
 
-/** Cross-asset matrix benchmarking each line to the cheapest NON-ZERO plant. */
-export function buildCockpitMatrix(fleet: Fleet): CockpitRow[] {
+/**
+ * Cross-asset matrix benchmarking each line to the cheapest NON-ZERO plant.
+ * `mode='normalized'` applies size-fair (economies-of-scale) benchmarking so the
+ * gap excludes the portion explained by plant size.
+ */
+export function buildCockpitMatrix(fleet: Fleet, mode: BenchmarkMode = 'absolute'): CockpitRow[] {
   const fx = fleet.fx_2026
   const assets = sortedAssets(fleet)
   const totals: Record<string, number> = {}
@@ -116,13 +140,15 @@ export function buildCockpitMatrix(fleet: Fleet): CockpitRow[] {
     })
     const nz = raw.filter((c) => c.usd > 0)
     const best = nz.length ? Math.min(...nz.map((c) => c.usd)) : 0
-    const best_code = (nz.find((c) => c.usd === best) ?? raw[0]).code
+    const bestCell = nz.find((c) => c.usd === best) ?? raw[0]
+    const best_code = bestCell.code
     let total_gap_idr = 0
     const cells: CockpitCell[] = raw.map((c) => {
-      const bench = best * c.mw * 1000 * fx
+      const benchUsd = normalizedBenchUsd(best, bestCell.mw, c.mw, mode)
+      const bench = benchUsd * c.mw * 1000 * fx
       const gap = Math.max(0, c.value_idr - bench)
       total_gap_idr += gap
-      return { ...c, is_best: c.usd === best && c.usd > 0, gap_idr: gap }
+      return { ...c, is_best: c.usd === best && c.usd > 0, gap_idr: gap, bench_usd: benchUsd }
     })
     return { block: name, semi: !!semi[name], best, best_code, cells, total_gap_idr }
   })
@@ -136,14 +162,19 @@ export const fleetBestCode = (fleet: Fleet) => {
 }
 
 export interface FleetStake { tot: number; by: Record<string, number> }
-/** Realistic value-at-stake: bring each plant's total $/kW to fleet best, capturing `cap`. */
-export function fleetBestStake(fleet: Fleet, cap: number): FleetStake {
+/**
+ * Realistic value-at-stake: bring each plant's total $/kW to fleet best, capturing `cap`.
+ * `mode='normalized'` applies size-fair benchmarking (see normalizedBenchUsd).
+ */
+export function fleetBestStake(fleet: Fleet, cap: number, mode: BenchmarkMode = 'absolute'): FleetStake {
   const fx = fleet.fx_2026
   const bestKw = fleetBestKw(fleet)
+  const bestMw = fleet.assets.find((a) => a.usd_per_kw_yr === bestKw)?.mw ?? 0
   const by: Record<string, number> = {}
   let tot = 0
   for (const a of fleet.assets) {
-    const g = Math.max(0, a.usd_per_kw_yr - bestKw) * a.mw * 1000 * fx * cap
+    const benchUsd = normalizedBenchUsd(bestKw, bestMw, a.mw, mode)
+    const g = Math.max(0, a.usd_per_kw_yr - benchUsd) * a.mw * 1000 * fx * cap
     by[a.code] = g
     tot += g
   }

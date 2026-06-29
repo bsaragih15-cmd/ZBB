@@ -1,26 +1,29 @@
 import { Fragment, useState } from 'react'
 import type { Fleet } from '../domain/types'
+import type { BenchmarkMode } from '../domain/cockpit-model'
 import {
   rpBn, rpBn2, usdKw, buildCockpitMatrix, sortedAssets, fleetBestKw, fleetBestCode,
-  tone, L4, DRV_FORMULA,
+  normalizedBenchUsd, tone, L4, DRV_FORMULA,
 } from '../domain/cockpit-model'
 
-export function AssetDrill({ fleet, assetCode, onChallenge, onSelectAsset, onDrillBlock }:
+export function AssetDrill({ fleet, assetCode, onChallenge, onSelectAsset, onDrillBlock, benchMode = 'absolute' }:
   {
     fleet: Fleet; assetCode: string; onChallenge: () => void
-    onSelectAsset?: (code: string) => void; onDrillBlock?: (block: string) => void
+    onSelectAsset?: (code: string) => void; onDrillBlock?: (block: string) => void; benchMode?: BenchmarkMode
   }) {
   const [open, setOpen] = useState<Set<number>>(new Set())
   const fx = fleet.fx_2026
   const assets = sortedAssets(fleet)
-  const matrix = buildCockpitMatrix(fleet)
+  const matrix = buildCockpitMatrix(fleet, benchMode)
   const bestKw = fleetBestKw(fleet)
   const bestCode = fleetBestCode(fleet)
+  const bestMw = fleet.assets.find((x) => x.usd_per_kw_yr === bestKw)?.mw ?? 0
   const a = fleet.assets.find((x) => x.code === assetCode) ?? assets[0]
   if (!a) return <div style={{ color: 'var(--muted)' }}>Asset not found</div>
 
   const isBest = a.code === bestCode
-  const gapKw = Math.max(0, a.usd_per_kw_yr - bestKw)
+  const benchKw = normalizedBenchUsd(bestKw, bestMw, a.mw, benchMode)
+  const gapKw = Math.max(0, a.usd_per_kw_yr - benchKw)
   const gapIdr = gapKw * a.mw * 1000 * fx
 
   const drill = (block: string) => (onDrillBlock ? onDrillBlock(block) : onChallenge())
