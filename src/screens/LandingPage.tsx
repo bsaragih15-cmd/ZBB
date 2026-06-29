@@ -9,10 +9,9 @@ import { buildCopilotContext } from '../domain/ai/context'
 import { loadExternal, externalTotalRange, externalStakeRange, EXTERNAL_LABEL } from '../domain/external-benchmark'
 import { ownerFor } from '../domain/owners'
 import { CopilotChat } from '../components/CopilotChat'
-import { ShouldCostBridge } from '../components/ShouldCostBridge'
 
-export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = 'absolute', committed = 0 }:
-  { fleet: Fleet; onDrill: (code: string) => void; cap?: number; onCap?: (c: number) => void; benchMode?: BenchmarkMode; committed?: number }) {
+export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = 'absolute' }:
+  { fleet: Fleet; onDrill: (code: string) => void; cap?: number; onCap?: (c: number) => void; benchMode?: BenchmarkMode }) {
   const [capLocal, setCapLocal] = useState(0.5)
   const cap = capProp ?? capLocal
   const setCap = onCap ?? setCapLocal
@@ -84,9 +83,6 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
               <div className="n" title={EXTERNAL_LABEL}>external · to the market frontier (${extRange.low.toFixed(0)}–${extRange.high.toFixed(0)}/kW)</div></div>
           </div>
         </div>
-
-        <ShouldCostBridge booked={total} committed={Math.min(committed, head.tot)}
-          openCap={Math.max(0, head.tot - committed)} pct={pct} />
 
         {/* heatmap */}
         <div className="panel">
