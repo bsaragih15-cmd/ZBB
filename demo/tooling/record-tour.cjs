@@ -126,7 +126,7 @@ async function moveToLoc(page, loc){
   await sleep(8000)
 
   // 9 — Board pack
-  await caption(page, 'Board pack', 'One click to a board-ready pack — KPIs, owners, initiatives — export to PDF.')
+  await caption(page, 'Board pack', 'One click to a board-ready pack — the cost summary, gaps by plant and line, and what’s been challenged — export to PDF.')
   { const t = page.locator('.tab', { hasText: 'Board pack' }); await moveToLoc(page, t); await clickFx(page); await t.click() }
   await page.waitForSelector('.board'); await sleep(900)
   await page.evaluate(() => window.scrollTo({ top: 0 }))
@@ -134,7 +134,7 @@ async function moveToLoc(page, loc){
   await sleep(3400)
 
   // 10 — outro
-  await caption(page, 'Backed · shared · live', 'Supabase · Claude · Vercel — the MPI Cost Cockpit.')
+  await caption(page, 'MPI Cost Cockpit', 'Benchmark, challenge, and budget — zero-based, end to end.')
   await page.evaluate(() => { window.scrollTo({ top: 0 }); window.__moveCur(960, 980) })
   await sleep(3000)
   await hideCap(page); await sleep(600)

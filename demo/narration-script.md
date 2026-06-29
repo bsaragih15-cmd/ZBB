@@ -35,9 +35,9 @@ Then challenge it. Log each call — accept, cut, or defer with a zero-based lev
 
 Ask the Copilot — it reasons over the real numbers and gives you the challenge questions for each owner.
 
-And in one click, a board-ready pack — KPIs, owners, and initiatives — exported to PDF.
+And in one click, a board-ready pack — the cost summary, the gaps by plant and by line, and what's been challenged — exported to PDF.
 
-Backed by Supabase, powered by Claude, shipped on Vercel. The MPI Cost Cockpit.
+Benchmark, challenge, and budget — zero-based, end to end. The MPI Cost Cockpit.
 
 ---
 
@@ -52,5 +52,5 @@ Backed by Supabase, powered by Claude, shipped on Vercel. The MPI Cost Cockpit.
 | 0:24 | L5 | Down to level five — every line as quantity, times frequency, times unit rate, times exchange rate; booked against a should-cost benchmark. |
 | 0:31 | Challenge | Then challenge it. Log each call — accept, cut, or defer with a zero-based lever — and export the committed savings to the eye-pee-em and ess-see-em trackers, keyed on budget code. |
 | 0:42 | Copilot | Ask the Copilot — it reasons over the real numbers and gives you the challenge questions for each owner. |
-| 0:51 | Board pack | And in one click, a board-ready pack — KPIs, owners, and initiatives — exported to PDF. |
-| 0:58 | Outro | Backed by Supabase, powered by Claude, shipped on Vercel. The MPI Cost Cockpit. |
+| 0:51 | Board pack | And in one click, a board-ready pack — the cost summary, the gaps by plant and by line, and what's been challenged — exported to PDF. |
+| 0:58 | Outro | Benchmark, challenge, and budget — zero-based, end to end. The MPI Cost Cockpit. |
