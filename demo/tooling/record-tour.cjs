@@ -64,72 +64,79 @@ async function moveToLoc(page, loc){
   await setup(page)
 
   // 1 — intro
-  await caption(page, 'MPI Cost Cockpit', 'Zero-based budgeting for a fleet of power plants — controllable O&amp;M, benchmarked.')
+  await caption(page, 'MPI Cost Cockpit', 'Zero-based budgeting for a fleet of gas-CCGT plants — controllable O&amp;M, benchmarked to best.')
   await sleep(3200)
 
   // 2 — headline / entity cards
-  await caption(page, '01 · Cross-asset', 'Two of three plants run above MRPR’s $45 / kW-yr best.')
-  await moveTo(page, '.scard', 1)
-  await sleep(2400)
+  await caption(page, '01 · Cross-asset', 'Two of three plants run above Asset&nbsp;1’s $45 / kW-yr best — Rp&nbsp;36.5&nbsp;Bn of gap to close.')
+  await moveTo(page, '.scard', 2)
+  await sleep(2600)
 
-  // 2b — like-for-like benchmark toggle
+  // 2b — external market band
+  await caption(page, 'External band', 'Each line benchmarked to fleet best — and to an external market band, so you see the headroom beyond your own best plant.')
+  await moveTo(page, 'table thead th', 4)
+  await sleep(3200)
+
+  // 3 — like-for-like benchmark toggle
   await caption(page, 'Like-for-like', 'Normalize for plant size — strip the scale advantage out of the gap.')
   { const lf = page.locator('.seg button', { hasText: 'Like-for-like' }); await moveToLoc(page, lf); await clickFx(page); await lf.click() }
-  await sleep(3000)
+  await sleep(2800)
+  { const ab = page.locator('.seg button', { hasText: 'Absolute' }); await moveToLoc(page, ab); await clickFx(page); await ab.click() }
+  await sleep(700)
 
-  // 3 — ambition + live dial
-  await caption(page, 'Ambition', 'Set the ambition — capture the full gap to best.')
-  { const s = page.locator('.seg button', { hasText: 'Stretch' }); await moveToLoc(page, s); await clickFx(page); await s.click() }
-  await sleep(2200)
-  await caption(page, 'Ambition', 'Or dial any capture share — the numbers update live.')
-  { const base = page.locator('.seg button', { hasText: 'Base' }); await moveToLoc(page, base); await clickFx(page); await base.click() }
-  await sleep(800)
+  // 4 — ambition + live dial
+  await caption(page, 'Ambition', 'Dial the capture share of the gap — the value-at-stake updates live.')
   { await moveTo(page, 'input[type=range]')
-    for (const v of [55,68,80,66,50]) {
+    for (const v of [60,75,88,70,50]) {
       await page.evaluate((val) => { const r=document.querySelector('input[type=range]'); const set=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set; set.call(r,val); r.dispatchEvent(new Event('input',{bubbles:true})) }, v)
-      await sleep(360)
+      await sleep(380)
     } }
-  await sleep(1200)
+  await sleep(1400)
 
-  // 4 — L3–L4 granularity
-  await caption(page, '02 · L3–L4 per asset', 'Drill any plant — every cost block, decomposed and benchmarked to fleet best.')
-  { const m = await moveTo(page, '.scard', 1); await clickFx(page); if(m) await m.el.click(); }
-  await page.waitForSelector('tr.clickable'); await sleep(2400)
+  // 5 — L3–L4 granularity: 2025 vs 2026, owners
+  await caption(page, '02 · L3–L4 per asset', 'Drill any plant — every cost block vs 2025, the YoY increase it carries, and a named accountable owner.')
+  { const m = await moveTo(page, '.scard', 2); await clickFx(page); if(m) await m.el.click(); }
+  await page.waitForSelector('tr.clickable'); await sleep(3200)
   await caption(page, 'L4 families', 'Expand a block to its driver families — the groupings each line rolls up to.')
   { const m = await moveTo(page, 'tr.clickable', 0); await clickFx(page); if(m) await m.el.click(); }
   await sleep(2600)
 
-  // 5 — L5 granularity (booked vs should-cost)
+  // 6 — L5 granularity (booked vs should-cost)
   await caption(page, '03 · L5 per asset', 'Down to L5: Qty × Freq × Unit-rate × FX — booked vs should-cost, line by line.')
   { const t = page.locator('.tab', { hasText: 'L5 per asset' }); await moveToLoc(page, t); await clickFx(page); await t.click() }
-  await page.waitForSelector('table'); await sleep(2800)
-  await caption(page, 'Budget-ready', 'The granularity you’ll budget to — bottom-up, tied to SCM &amp; IPM.')
-  await moveTo(page, 'table tbody tr', 1)
-  await sleep(3000)
+  await page.waitForSelector('table'); await sleep(3000)
 
-  // 6 — Challenge + write-back export
+  // 7 — Challenge + write-back export
   await caption(page, '04 · Challenge', 'Log the call — accept, cut or defer with a ZBB lever.')
   { const t = page.locator('.tab', { hasText: 'Challenge' }); await moveToLoc(page, t); await clickFx(page); await t.click() }
-  await page.waitForSelector('select'); await sleep(2400)
-  { const lg = page.locator('button', { hasText: 'Log decision' }).first(); await moveToLoc(page, lg); await clickFx(page); await lg.click() }
-  await sleep(1600)
+  await page.waitForSelector('select'); await sleep(2200)
+  { const lg = page.locator('button', { hasText: 'Log decision' }).first(); if(await moveToLoc(page, lg)){ await clickFx(page); await lg.click() } }
+  await sleep(1500)
   await caption(page, 'Write-back', 'Committed savings export to the IPM / SCM tracker, keyed on budget code.')
-  { const ex = page.locator('button', { hasText: 'export write-back' }); await moveToLoc(page, ex) }
-  await sleep(2600)
+  { const ex = page.locator('button', { hasText: 'export' }).first(); await moveToLoc(page, ex) }
+  await sleep(2400)
 
-  // 7 — AI copilot
-  await caption(page, '05 · AI Copilot', 'Ask the budget. The Copilot reasons over the real numbers.')
+  // 8 — AI copilot
+  await caption(page, '05 · AI Copilot', 'Ask the budget. The Copilot reasons over the real numbers — grounded, not generic.')
   { const t = page.locator('.tab', { hasText: 'Cross-asset' }); await moveToLoc(page, t); await clickFx(page); await t.click() }
   await sleep(900)
   await page.locator('.copilot button.pill', { hasText:'largest gap' }).scrollIntoViewIfNeeded()
   await sleep(500)
   { const m = await moveTo(page, '.copilot button.pill', 0); await clickFx(page); if(m) await m.el.click(); }
-  await sleep(8500)
+  await sleep(8000)
 
-  // 8 — outro
+  // 9 — Board pack
+  await caption(page, 'Board pack', 'One click to a board-ready pack — KPIs, owners, initiatives — export to PDF.')
+  { const t = page.locator('.tab', { hasText: 'Board pack' }); await moveToLoc(page, t); await clickFx(page); await t.click() }
+  await page.waitForSelector('.board'); await sleep(900)
+  await page.evaluate(() => window.scrollTo({ top: 0 }))
+  await moveTo(page, '.board-actions .tab', 0)
+  await sleep(3400)
+
+  // 10 — outro
   await caption(page, 'Backed · shared · live', 'Supabase · Claude · Vercel — the MPI Cost Cockpit.')
-  await page.evaluate(() => window.__moveCur(960, 980))
-  await sleep(3200)
+  await page.evaluate(() => { window.scrollTo({ top: 0 }); window.__moveCur(960, 980) })
+  await sleep(3000)
   await hideCap(page); await sleep(600)
 
   const vpath = await page.video().path()

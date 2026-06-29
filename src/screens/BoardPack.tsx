@@ -82,7 +82,7 @@ export function BoardPack({ fleet, cap = 0.5, benchMode = 'absolute', decisions 
                 const share = full.tot > 0 ? gap / full.tot : 0
                 return (
                   <tr key={a.code}>
-                    <td className="l"><b>{a.code}</b> <span className="bd-muted">{a.full_name}</span></td>
+                    <td className="l"><b>{a.code}</b>{a.full_name !== a.code && <span className="bd-muted"> {a.full_name}</span>}</td>
                     <td>{a.mw} MW</td>
                     <td>${a.usd_per_kw_yr.toFixed(1)}{a.code === bestCode && <span className="bd-best"> best</span>}</td>
                     <td>{gap > 0 ? rpBn(gap) : '—'}</td>

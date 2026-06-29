@@ -7,9 +7,9 @@ const PORT = 5050
 const TYPES = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.json':'application/json', '.svg':'image/svg+xml', '.png':'image/png', '.ico':'image/x-icon' }
 
 const ANSWER =
-`MEB+DEB sits at $54.6/kW-yr versus MRPR's $45 — the widest spread in the fleet, about Rp 25 Bn at stake. ` +
+`Asset 3 sits at $54.6/kW-yr versus Asset 1's $45 — the widest spread in the fleet, about Rp 12.5 Bn at stake. ` +
 `The gap concentrates in Maintenance Cost and Salary & Allowance. ` +
-`Challenge the owner: what scope or headcount justifies the premium over MRPR, and which of it is contractual versus discretionary?`
+`Challenge the owner: what scope or headcount justifies the premium over Asset 1, and which of it is contractual versus discretionary?`
 
 const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && req.url === '/api/copilot') {
