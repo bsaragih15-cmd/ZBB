@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Fleet, Decision } from '../domain/types'
 import { totalCommittedSaving } from '../domain/decision-store'
+import { summarizeRealization } from '../domain/realization'
 import {
   rpBn, rpBn2, buildCockpitMatrix, sortedAssets, fleetTotal, fleetBestStake,
 } from '../domain/cockpit-model'
@@ -20,6 +21,7 @@ export function CostOutBridge({ fleet, decisions, cap: capProp, onCap }:
   const closing = opening - out
 
   const committed = totalCommittedSaving(decisions)
+  const realization = summarizeRealization(decisions)
 
   // waterfall: opening | reductions per entity (desc, non-zero) | challenged
   const reds = assets.map((a) => ({ code: a.code, v: head.by[a.code] ?? 0 }))
@@ -56,6 +58,7 @@ export function CostOutBridge({ fleet, decisions, cap: capProp, onCap }:
           <div className="stat"><div className="k">Cost-out at {pct}%</div><div className="v" style={{ color: 'var(--amber)' }}>−Rp {rpBn(out)} Bn</div></div>
           <div className="stat"><div className="k">Challenged budget</div><div className="v" style={{ color: 'var(--teal-bright)' }}>Rp {rpBn(closing)} Bn</div></div>
           <div className="stat"><div className="k">Committed (logged)</div><div className="v" style={{ color: 'var(--green)' }}>Rp {(committed / 1e9).toFixed(1)} Bn</div></div>
+          <div className="stat"><div className="k">Risk-adjusted</div><div className="v" style={{ color: 'var(--teal-bright)' }}>Rp {(realization.risk_adjusted_idr / 1e9).toFixed(1)} Bn</div></div>
         </div>
 
         <div className="panel" style={{ marginBottom: 16 }}>
@@ -124,7 +127,7 @@ export function CostOutBridge({ fleet, decisions, cap: capProp, onCap }:
             </table>
           </div>
         </div>
-        <div className="foot">Committed savings (Rp {(committed / 1e9).toFixed(1)} Bn) are decisions already logged at L5; the bridge above shows the remaining gap-to-best opportunity at the chosen capture.</div>
+        <div className="foot">Committed savings (Rp {(committed / 1e9).toFixed(1)} Bn) are decisions already logged at L5; risk-adjusted (Rp {(realization.risk_adjusted_idr / 1e9).toFixed(1)} Bn) weights each by its ZBB lever's realization probability — what a CFO can actually bank. The bridge above shows the remaining gap-to-best opportunity at the chosen capture.</div>
       </div>
 
       <div className="panel glow copilot">
