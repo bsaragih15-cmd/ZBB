@@ -6,6 +6,7 @@ import {
   fleetBestStake, tone, dotColor, NUMWORD,
 } from '../domain/cockpit-model'
 import { buildCopilotContext } from '../domain/ai/context'
+import { loadExternal, externalTotalUsd, fleetExternalStake, EXTERNAL_LABEL } from '../domain/external-benchmark'
 import { CopilotChat } from '../components/CopilotChat'
 
 export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = 'absolute' }:
@@ -19,6 +20,9 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
   const assets = sortedAssets(fleet)
   const matrix = buildCockpitMatrix(fleet, benchMode)
   const head = fleetBestStake(fleet, cap, benchMode)
+  const external = loadExternal()
+  const extTotal = externalTotalUsd(external)
+  const extStake = fleetExternalStake(fleet, external, cap)
   const stretch = matrix.reduce((s, r) => s + r.total_gap_idr * cap, 0)
   const total = fleetTotal(fleet)
   const bestKw = fleetBestKw(fleet)
@@ -73,9 +77,9 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
                 onChange={(e) => setCap(Number(e.target.value) / 100)} />
             </div>
             <div className="stake real"><div className="v">Rp {rpBn(head.tot)} Bn</div>
-              <div className="n">realistic · match the best plant ({bestCode})</div></div>
-            <div className="stake stretch"><div className="v">Rp {rpBn(stretch)} Bn</div>
-              <div className="n">match best on every line</div></div>
+              <div className="n">internal · match the best plant ({bestCode})</div></div>
+            <div className="stake stretch"><div className="v" style={{ color: 'var(--blue)' }}>Rp {rpBn(extStake.tot)} Bn</div>
+              <div className="n" title={EXTERNAL_LABEL}>external · to the market frontier (${extTotal.toFixed(0)}/kW)</div></div>
           </div>
         </div>
 
@@ -92,6 +96,7 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
                     <th key={a.code}>{a.code}
                       <div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>${a.usd_per_kw_yr.toFixed(0)}/kW</div></th>
                   ))}
+                  <th title={EXTERNAL_LABEL} style={{ color: 'var(--blue)' }}>External<div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>$/kW · mkt</div></th>
                   <th>Stretch<div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>Rp Bn</div></th>
                 </tr>
               </thead>
@@ -108,19 +113,24 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
                       const [bg, fg] = tone(c.usd, row.best, c.is_best)
                       return <td key={a.code} style={{ background: bg, color: fg, fontWeight: c.is_best ? 700 : 500 }}>${c.usd.toFixed(1)}</td>
                     })}
+                    {(() => { const e = external[row.block]; return (
+                      <td title={e?.source} style={{ color: 'var(--blue)', background: 'rgba(91,155,245,0.07)' }}>
+                        {e ? `$${e.usd.toFixed(1)}` : '—'}</td>
+                    ) })()}
                     <td style={{ color: 'var(--muted)' }}>{(row.total_gap_idr * cap / 1e9).toFixed(1)}</td>
                   </tr>
                 ))}
                 <tr className="total">
                   <td className="l">Total controllable</td>
                   {assets.map((a) => <td key={a.code}>${a.usd_per_kw_yr.toFixed(1)}</td>)}
+                  <td style={{ color: 'var(--blue)' }}>${extTotal.toFixed(1)}</td>
                   <td style={{ color: 'var(--amber)' }}>{rpBn(stretch)}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
-        <div className="foot">Green = best-in-fleet on that line. ⚑ = booked far below peers (likely classified under another block) — excluded from setting the benchmark so it can't create a fictitious gap. Click any asset to drill to L3–L4.</div>
+        <div className="foot">Green = best-in-fleet on that line. <span style={{ color: 'var(--blue)' }}>External</span> = market top-quartile $/kW ({EXTERNAL_LABEL.toLowerCase()}) — the frontier beyond our best plant. ⚑ = booked far below peers (likely classified under another block), excluded from the benchmark. Click any asset to drill to L3–L4.</div>
       </div>
 
       {/* copilot rail */}
