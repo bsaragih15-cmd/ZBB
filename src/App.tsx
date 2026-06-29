@@ -11,9 +11,8 @@ import { AssetDrill } from './screens/AssetDrill'
 import { DriverWorkspace } from './screens/DriverWorkspace'
 import { ChallengeWorkspace } from './screens/ChallengeWorkspace'
 import { BoardPack } from './screens/BoardPack'
-import { Settings } from './screens/Settings'
 
-type Screen = 'cross-asset' | 'l3l4' | 'l5' | 'challenge' | 'board' | 'settings'
+type Screen = 'cross-asset' | 'l3l4' | 'l5' | 'challenge' | 'board'
 
 const NAV: { id: Screen; label: string }[] = [
   { id: 'cross-asset', label: '1 · Cross-asset' },
@@ -21,7 +20,6 @@ const NAV: { id: Screen; label: string }[] = [
   { id: 'l5', label: '3 · L5 per asset' },
   { id: 'challenge', label: '4 · Challenge' },
   { id: 'board', label: 'Board pack' },
-  { id: 'settings', label: 'Settings' },
 ]
 
 const BENCH: { label: string; mode: BenchmarkMode }[] = [
@@ -43,7 +41,6 @@ export default function App() {
   const [activeBlock, setActiveBlock] = useState<string>('Consumable')
   const [cap, setCap] = useState(0.5)
   const [benchMode, setBenchMode] = useState<BenchmarkMode>('absolute')
-  const [rev, setRev] = useState(0) // bumped on settings save to re-read localStorage-backed assumptions
   const [lineData, setLineData] = useState<{ lines: Line[]; source: LineSource }>({ lines: [], source: 'modeled' })
 
   useEffect(() => { loadFleet().then(setFleet) }, [])
@@ -115,17 +112,12 @@ export default function App() {
     </div>
   )
 
-  const committed = decisions
-    .filter((d) => d.outcome !== 'defer' && d.committed_saving_idr > 0)
-    .reduce((s, d) => s + d.committed_saving_idr, 0)
-
   return (
     <div>
       {nav}
-      <main className="wrap" key={rev}>
+      <main className="wrap">
         {crumbs}
         {screen === 'cross-asset' && <LandingPage fleet={fleet} cap={cap} onCap={setCap} benchMode={benchMode}
-          committed={committed}
           onDrill={(code) => { setActiveAsset(code); setScreen('l3l4') }} />}
         {screen === 'l3l4' && <AssetDrill fleet={fleet} assetCode={activeAsset} benchMode={benchMode}
           onChallenge={() => setScreen('challenge')}
@@ -137,7 +129,6 @@ export default function App() {
           lines={lineData.lines} source={lineData.source}
           decisions={decisions} setDecisions={setDecisions} onUpload={onUpload} onClear={onClear} />}
         {screen === 'board' && <BoardPack fleet={fleet} cap={cap} benchMode={benchMode} decisions={decisions} />}
-        {screen === 'settings' && <Settings onSaved={() => setRev((r) => r + 1)} />}
       </main>
     </div>
   )
