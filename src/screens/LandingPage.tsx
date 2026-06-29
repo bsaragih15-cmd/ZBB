@@ -101,6 +101,10 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
                     <td className="l">{row.block}{row.semi && <span className="semi">semi-committed</span>}</td>
                     {assets.map((a) => {
                       const c = row.cells.find((x) => x.code === a.code)!
+                      if (c.is_outlier) {
+                        return <td key={a.code} title="likely classified elsewhere — excluded from benchmark"
+                          style={{ background: 'rgba(255,255,255,0.03)', color: 'var(--muted-2)', fontWeight: 500 }}>${c.usd.toFixed(1)} ⚑</td>
+                      }
                       const [bg, fg] = tone(c.usd, row.best, c.is_best)
                       return <td key={a.code} style={{ background: bg, color: fg, fontWeight: c.is_best ? 700 : 500 }}>${c.usd.toFixed(1)}</td>
                     })}
@@ -116,7 +120,7 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
             </table>
           </div>
         </div>
-        <div className="foot">Green = best-in-fleet on that line. Lines where a plant books Rp 0 are benchmarked to the best non-zero plant. Click any asset to drill to L3–L4.</div>
+        <div className="foot">Green = best-in-fleet on that line. ⚑ = booked far below peers (likely classified under another block) — excluded from setting the benchmark so it can't create a fictitious gap. Click any asset to drill to L3–L4.</div>
       </div>
 
       {/* copilot rail */}
