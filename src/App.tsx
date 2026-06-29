@@ -10,14 +10,16 @@ import { LandingPage } from './screens/LandingPage'
 import { AssetDrill } from './screens/AssetDrill'
 import { DriverWorkspace } from './screens/DriverWorkspace'
 import { ChallengeWorkspace } from './screens/ChallengeWorkspace'
+import { BoardPack } from './screens/BoardPack'
 
-type Screen = 'cross-asset' | 'l3l4' | 'l5' | 'challenge'
+type Screen = 'cross-asset' | 'l3l4' | 'l5' | 'challenge' | 'board'
 
 const NAV: { id: Screen; label: string }[] = [
   { id: 'cross-asset', label: '1 · Cross-asset' },
   { id: 'l3l4', label: '2 · L3–L4 per asset' },
   { id: 'l5', label: '3 · L5 per asset' },
   { id: 'challenge', label: '4 · Challenge' },
+  { id: 'board', label: 'Board pack' },
 ]
 
 const BENCH: { label: string; mode: BenchmarkMode }[] = [
@@ -110,6 +112,7 @@ export default function App() {
         {screen === 'challenge' && <ChallengeWorkspace assetCode={activeAsset}
           lines={lineData.lines} source={lineData.source}
           decisions={decisions} setDecisions={setDecisions} onUpload={onUpload} onClear={onClear} />}
+        {screen === 'board' && <BoardPack fleet={fleet} cap={cap} benchMode={benchMode} decisions={decisions} />}
       </div>
     </div>
   )

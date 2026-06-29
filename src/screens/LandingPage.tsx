@@ -7,6 +7,7 @@ import {
 } from '../domain/cockpit-model'
 import { buildCopilotContext } from '../domain/ai/context'
 import { loadExternal, externalTotalRange, externalStakeRange, EXTERNAL_LABEL } from '../domain/external-benchmark'
+import { ownerFor } from '../domain/owners'
 import { CopilotChat } from '../components/CopilotChat'
 
 export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = 'absolute' }:
@@ -103,7 +104,9 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
               <tbody>
                 {matrix.map((row) => (
                   <tr key={row.block} className="clickable" onClick={() => onDrill(row.cells.find((c) => !c.is_best && c.gap_idr > 0)?.code ?? worst.code)}>
-                    <td className="l">{row.block}{row.semi && <span className="semi">semi-committed</span>}</td>
+                    <td className="l">{row.block}{row.semi && <span className="semi">semi-committed</span>}
+                      <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted-2)', fontWeight: 400, marginTop: 2 }}
+                        title={ownerFor(row.block).role}>◷ {ownerFor(row.block).name}</div></td>
                     {assets.map((a) => {
                       const c = row.cells.find((x) => x.code === a.code)!
                       if (c.is_outlier) {
