@@ -6,7 +6,7 @@ import {
   fleetBestStake, tone, dotColor, NUMWORD,
 } from '../domain/cockpit-model'
 import { buildCopilotContext } from '../domain/ai/context'
-import { loadExternal, externalTotalUsd, fleetExternalStake, EXTERNAL_LABEL } from '../domain/external-benchmark'
+import { loadExternal, externalTotalRange, externalStakeRange, EXTERNAL_LABEL } from '../domain/external-benchmark'
 import { CopilotChat } from '../components/CopilotChat'
 
 export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = 'absolute' }:
@@ -21,8 +21,8 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
   const matrix = buildCockpitMatrix(fleet, benchMode)
   const head = fleetBestStake(fleet, cap, benchMode)
   const external = loadExternal()
-  const extTotal = externalTotalUsd(external)
-  const extStake = fleetExternalStake(fleet, external, cap)
+  const extRange = externalTotalRange(external)
+  const extStake = externalStakeRange(fleet, external, cap)
   const stretch = matrix.reduce((s, r) => s + r.total_gap_idr * cap, 0)
   const total = fleetTotal(fleet)
   const bestKw = fleetBestKw(fleet)
@@ -78,8 +78,8 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
             </div>
             <div className="stake real"><div className="v">Rp {rpBn(head.tot)} Bn</div>
               <div className="n">internal · match the best plant ({bestCode})</div></div>
-            <div className="stake stretch"><div className="v" style={{ color: 'var(--blue)' }}>Rp {rpBn(extStake.tot)} Bn</div>
-              <div className="n" title={EXTERNAL_LABEL}>external · to the market frontier (${extTotal.toFixed(0)}/kW)</div></div>
+            <div className="stake stretch"><div className="v" style={{ color: 'var(--blue)' }}>Rp {rpBn(extStake.minTot)}–{rpBn(extStake.maxTot)} Bn</div>
+              <div className="n" title={EXTERNAL_LABEL}>external · to the market frontier (${extRange.low.toFixed(0)}–${extRange.high.toFixed(0)}/kW)</div></div>
           </div>
         </div>
 
@@ -96,7 +96,7 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
                     <th key={a.code}>{a.code}
                       <div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>${a.usd_per_kw_yr.toFixed(0)}/kW</div></th>
                   ))}
-                  <th title={EXTERNAL_LABEL} style={{ color: 'var(--blue)' }}>External<div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>$/kW · mkt</div></th>
+                  <th title={EXTERNAL_LABEL} style={{ color: 'var(--blue)' }}>External<div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>$/kW · mkt band</div></th>
                   <th>Stretch<div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>Rp Bn</div></th>
                 </tr>
               </thead>
@@ -114,8 +114,8 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
                       return <td key={a.code} style={{ background: bg, color: fg, fontWeight: c.is_best ? 700 : 500 }}>${c.usd.toFixed(1)}</td>
                     })}
                     {(() => { const e = external[row.block]; return (
-                      <td title={e?.source} style={{ color: 'var(--blue)', background: 'rgba(91,155,245,0.07)' }}>
-                        {e ? `$${e.usd.toFixed(1)}` : '—'}</td>
+                      <td title={e?.source} className="mono" style={{ color: 'var(--blue)', background: 'rgba(91,155,245,0.07)', fontSize: 11 }}>
+                        {e ? `$${e.low.toFixed(1)}–${e.high.toFixed(1)}` : '—'}</td>
                     ) })()}
                     <td style={{ color: 'var(--muted)' }}>{(row.total_gap_idr * cap / 1e9).toFixed(1)}</td>
                   </tr>
@@ -123,7 +123,7 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
                 <tr className="total">
                   <td className="l">Total controllable</td>
                   {assets.map((a) => <td key={a.code}>${a.usd_per_kw_yr.toFixed(1)}</td>)}
-                  <td style={{ color: 'var(--blue)' }}>${extTotal.toFixed(1)}</td>
+                  <td className="mono" style={{ color: 'var(--blue)', fontSize: 11 }}>${extRange.low.toFixed(0)}–${extRange.high.toFixed(0)}</td>
                   <td style={{ color: 'var(--amber)' }}>{rpBn(stretch)}</td>
                 </tr>
               </tbody>

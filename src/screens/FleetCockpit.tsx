@@ -1,38 +1,47 @@
 import type { Fleet } from '../domain/types'
-import { benchmarkFleet } from '../domain/benchmark'
-import { fleetTotals } from '../domain/index-calc'
+import type { BenchmarkMode } from '../domain/cockpit-model'
+import { fleetTotal, fleetBestKw, fleetBestCode, fleetBestStake, sortedAssets, rpBn } from '../domain/cockpit-model'
 import { KpiStrip } from '../components/KpiStrip'
 import { BenchmarkBar } from '../components/BenchmarkBar'
 import { ReliabilityGuardrail } from '../components/ReliabilityGuardrail'
 
-export function FleetCockpit({ fleet, onDrill }: { fleet: Fleet; onDrill: (code: string) => void }) {
-  const bench = benchmarkFleet(fleet.assets, fleet.fx_2026)
-  const totals = fleetTotals(fleet.assets)
-  const batamBest = Math.min(...fleet.assets.filter((a) => a.mw < 150).map((a) => a.usd_per_kw_yr))
-  const totalGapRpBn = bench.reduce((s, b) => s + b.gap_rp_bn, 0)
+const sev = (bn: number) => (bn >= 8 ? 'high' : bn >= 3 ? 'medium' : 'low')
+
+export function FleetCockpit({ fleet, onDrill, benchMode = 'absolute' }:
+  { fleet: Fleet; onDrill: (code: string) => void; benchMode?: BenchmarkMode }) {
+  const assets = sortedAssets(fleet)
+  const total = fleetTotal(fleet)
+  const bestKw = fleetBestKw(fleet)
+  const bestCode = fleetBestCode(fleet)
+  const fullStake = fleetBestStake(fleet, 1, benchMode) // full gap-to-best
+  const nAbove = assets.filter((a) => (fullStake.by[a.code] ?? 0) > 0).length
+  const rows = assets.map((a) => ({
+    code: a.code,
+    usd_per_kw_yr: Number(a.usd_per_kw_yr.toFixed(1)),
+    gap_rp_bn: (fullStake.by[a.code] ?? 0) / 1e9,
+    severity: sev((fullStake.by[a.code] ?? 0) / 1e9),
+  }))
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-[#006CB8] mb-1">
-        MEB runs O&amp;M 14% above the Batam best-in-fleet, a Rp 9–10 Bn annual gap
-      </h2>
-      <p className="text-gray-600 mb-4 text-sm">
-        Controllable O&amp;M ex-fuel, 2026 budget, four real gas-CCGT assets, benchmarked to own-technology peer.
-      </p>
+      <div className="sec" style={{ marginBottom: 8 }}>FLEET OVERVIEW · CONTROLLABLE O&amp;M EX-FUEL · 2026{benchMode === 'normalized' ? ' · LIKE-FOR-LIKE' : ''}</div>
+      <h1 className="hero" style={{ fontSize: 26 }}>
+        {nAbove} of {assets.length} plants run above {bestCode}'s <span className="tealnum">${bestKw.toFixed(0)}/kW-yr</span> — <span className="num">Rp {rpBn(fullStake.tot)} Bn</span> of gap to close.
+      </h1>
       <KpiStrip items={[
-        { label: 'Fleet controllable O&M', value: `Rp ${totals.total_rp_bn.toFixed(0)} Bn` },
-        { label: 'Total gap to best', value: `Rp ${totalGapRpBn.toFixed(1)} Bn` },
-        { label: 'Best-in-fleet', value: `$${totals.best_usd_per_kw_yr.toFixed(1)}/kW-yr` },
-        { label: 'Assets above best', value: `${totals.count_above_best}` },
+        { label: 'Fleet controllable O&M', value: `Rp ${rpBn(total)} Bn` },
+        { label: 'Total gap to best', value: `Rp ${rpBn(fullStake.tot)} Bn` },
+        { label: 'Best-in-fleet', value: `$${bestKw.toFixed(1)}/kW-yr` },
+        { label: 'Plants above best', value: `${nAbove}` },
       ]} />
-      <div className="bg-white rounded border p-4">
-        <BenchmarkBar rows={bench.map((b) => ({ code: b.code, usd_per_kw_yr: b.usd_per_kw_yr, gap_rp_bn: b.gap_rp_bn, severity: b.severity }))} benchmark={batamBest} />
+      <div className="panel" style={{ padding: 16, marginBottom: 16 }}>
+        <div className="lbl" style={{ marginBottom: 8 }}>$/kW-yr by plant vs best-in-fleet</div>
+        <BenchmarkBar rows={rows} benchmark={Number(bestKw.toFixed(1))} />
       </div>
       <ReliabilityGuardrail assets={fleet.assets} />
-      <div className="mt-4 flex gap-2">
-        {fleet.assets.map((a) => (
-          <button key={a.code} onClick={() => onDrill(a.code)}
-            className="px-3 py-1 bg-[#006CB8] text-white rounded text-sm">Drill {a.code}</button>
+      <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+        {assets.map((a) => (
+          <button key={a.code} className="ap" onClick={() => onDrill(a.code)}>Drill {a.code} →</button>
         ))}
       </div>
     </div>
