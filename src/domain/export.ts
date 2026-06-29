@@ -27,3 +27,20 @@ export function buildWriteBack(lines: Line[], decisions: Decision[]): WriteBackR
     }
   })
 }
+
+const CSV_COLS: (keyof WriteBackRow)[] = [
+  'budget_code', 'cost_block', 'l3_activity', 'l4_equipment',
+  'submitted_value_idr', 'committed_saving_idr', 'approved_value_idr', 'lever', 'outcome',
+]
+
+const csvCell = (v: string | number) => {
+  const s = String(v ?? '')
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
+/** Serialize the IPM/SCM write-back rows to CSV text (header + rows). */
+export function writeBackCsv(rows: WriteBackRow[]): string {
+  const head = CSV_COLS.join(',')
+  const body = rows.map((r) => CSV_COLS.map((k) => csvCell(r[k])).join(',')).join('\n')
+  return `${head}\n${body}\n`
+}

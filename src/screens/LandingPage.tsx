@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Fleet } from '../domain/types'
+import type { BenchmarkMode } from '../domain/cockpit-model'
 import {
   rpBn, fmt, buildCockpitMatrix, sortedAssets, fleetTotal, fleetBestKw, fleetBestCode,
   fleetBestStake, tone, dotColor, NUMWORD,
@@ -7,8 +8,8 @@ import {
 import { buildCopilotContext } from '../domain/ai/context'
 import { CopilotChat } from '../components/CopilotChat'
 
-export function LandingPage({ fleet, onDrill, cap: capProp, onCap }:
-  { fleet: Fleet; onDrill: (code: string) => void; cap?: number; onCap?: (c: number) => void }) {
+export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = 'absolute' }:
+  { fleet: Fleet; onDrill: (code: string) => void; cap?: number; onCap?: (c: number) => void; benchMode?: BenchmarkMode }) {
   const [capLocal, setCapLocal] = useState(0.5)
   const cap = capProp ?? capLocal
   const setCap = onCap ?? setCapLocal
@@ -16,8 +17,8 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap }:
 
   const fx = fleet.fx_2026
   const assets = sortedAssets(fleet)
-  const matrix = buildCockpitMatrix(fleet)
-  const head = fleetBestStake(fleet, cap)
+  const matrix = buildCockpitMatrix(fleet, benchMode)
+  const head = fleetBestStake(fleet, cap, benchMode)
   const stretch = matrix.reduce((s, r) => s + r.total_gap_idr * cap, 0)
   const total = fleetTotal(fleet)
   const bestKw = fleetBestKw(fleet)

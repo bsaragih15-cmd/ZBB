@@ -1,18 +1,19 @@
 import { useState } from 'react'
 import type { Fleet } from '../domain/types'
+import type { BenchmarkMode } from '../domain/cockpit-model'
 import {
-  rpBn2, fmt, buildCockpitMatrix, sortedAssets, l5lines, DRV_FORMULA,
+  rpBn, rpBn2, fmt, buildCockpitMatrix, sortedAssets, l5lines, DRV_FORMULA,
 } from '../domain/cockpit-model'
 
-export function DriverWorkspace({ fleet, assetCode, block, onSelectAsset, onSelectBlock }:
+export function DriverWorkspace({ fleet, assetCode, block, onSelectAsset, onSelectBlock, benchMode = 'absolute' }:
   {
     fleet: Fleet; assetCode: string; block: string
-    onSelectAsset?: (code: string) => void; onSelectBlock?: (block: string) => void
+    onSelectAsset?: (code: string) => void; onSelectBlock?: (block: string) => void; benchMode?: BenchmarkMode
   }) {
   const [challenge, setChallenge] = useState(0)
   const fx = fleet.fx_2026
   const assets = sortedAssets(fleet)
-  const matrix = buildCockpitMatrix(fleet)
+  const matrix = buildCockpitMatrix(fleet, benchMode)
   const a = fleet.assets.find((x) => x.code === assetCode) ?? assets[0]
   if (!a) return <div style={{ color: 'var(--muted)' }}>Asset not found</div>
 
@@ -23,6 +24,10 @@ export function DriverWorkspace({ fleet, assetCode, block, onSelectAsset, onSele
   const lines = l5lines(a, activeBlock)
   const ch = challenge / 100
   const m = matrix.find((r) => r.block === activeBlock)
+  const cell = m?.cells.find((c) => c.code === a.code)
+  const booked = blk?.value_idr ?? 0
+  const shouldCost = cell ? Math.max(0, booked - cell.gap_idr) : booked
+  const variance = cell?.gap_idr ?? 0
 
   let before = 0, after = 0
   for (const L of lines) { before += L.value; after += L.value * (1 - ch) }
@@ -51,6 +56,14 @@ export function DriverWorkspace({ fleet, assetCode, block, onSelectAsset, onSele
           Every line resolves to <b>Qty × Freq × Unit Rate × FX</b> and carries a Budget Code that ties the budget
           to the SCM procurement package and the IPM weekly tracker.{' '}
           {m && <>Fleet best on this line is {m.best_code} at ${m.best.toFixed(1)}/kW.</>} Drag the challenge dial to trim rates and quantities.
+        </div>
+
+        <div className="stats" style={{ marginBottom: 4 }}>
+          <div className="stat"><div className="k">Booked</div><div className="v">Rp {rpBn(booked)} Bn</div></div>
+          <div className="stat"><div className="k">Should-cost · {benchMode === 'normalized' ? 'like-for-like' : 'fleet best'}</div>
+            <div className="v" style={{ color: 'var(--teal-bright)' }}>Rp {rpBn(shouldCost)} Bn</div></div>
+          <div className="stat"><div className="k">Challengeable variance</div>
+            <div className="v" style={{ color: variance > 0 ? 'var(--amber)' : 'var(--green)' }}>{variance > 0 ? `Rp ${rpBn(variance)} Bn` : '—'}</div></div>
         </div>
 
         <div className="panel" style={{ marginBottom: 16 }}>
