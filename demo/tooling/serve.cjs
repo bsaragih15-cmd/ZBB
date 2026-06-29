@@ -2,7 +2,7 @@ const http = require('http')
 const fs = require('fs')
 const path = require('path')
 
-const DIST = path.join(__dirname, 'dist')
+const DIST = path.join(__dirname, '..', '..', 'dist')
 const PORT = 5050
 const TYPES = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.json':'application/json', '.svg':'image/svg+xml', '.png':'image/png', '.ico':'image/x-icon' }
 

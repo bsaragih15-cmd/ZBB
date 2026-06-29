@@ -1,4 +1,4 @@
-const { chromium } = require('./node_modules/playwright-core')
+const { chromium } = require('playwright-core')
 const OUT = '/tmp/claude-0/-home-user-ZBB/598c1678-2c91-5280-81fb-6d99501cc51d/scratchpad/vid2'
 
 const sleep = ms => new Promise(r => setTimeout(r, ms))
@@ -16,7 +16,7 @@ async function setup(page){
     @keyframes dring{0%{opacity:.9;transform:scale(.3)}100%{opacity:0;transform:scale(1.6)}}
     #democap{position:fixed;z-index:99999;left:50%;bottom:5vh;transform:translateX(-50%) translateY(10px);
       max-width:64vw;background:rgba(8,16,14,.9);border:1px solid rgba(45,212,191,.35);
-      backdrop-filter:blur(8px);color:#DDE7E4;font-family:Inter,system-ui,sans-serif;font-size:20px;line-height:1.4;
+      backdrop-filter:blur(8px);color:#DDE7E4;font-family:Inter,system-ui,sans-serif;font-size:23px;line-height:1.4;
       padding:14px 22px;border-radius:12px;opacity:0;transition:opacity .45s ease,transform .45s ease;
       box-shadow:0 12px 50px rgba(0,0,0,.5)}
     #democap.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -82,22 +82,25 @@ async function clickFx(page){ await page.evaluate(() => window.__click()); await
     } }
   await sleep(1400)
 
-  // 4 — drill an asset
-  await caption(page, '02 · Drill-down', 'Click any plant to open its cost lines.')
+  // 4 — L3–L4 granularity
+  await caption(page, '02 · L3–L4 per asset', 'Drill any plant — every cost block, decomposed and benchmarked to fleet best.')
   { const m = await moveTo(page, '.scard', 1); await clickFx(page); if(m) await m.el.click(); }
-  await sleep(2800)
+  await page.waitForSelector('tr.clickable'); await sleep(2600)
+  await caption(page, 'L4 families', 'Expand a block to its driver families — the standard groupings each line rolls up to.')
+  { const m = await moveTo(page, 'tr.clickable', 0); await clickFx(page); if(m) await m.el.click(); }
+  await sleep(3000)
 
-  // 5 — cost-out bridge
-  await caption(page, '03 · Cost-out bridge', 'Opening budget → challenged budget, entity by entity.')
-  { const m = await page.locator('.tab', { hasText:'Cost-out bridge' }); const box=await m.boundingBox(); if(box){ await page.evaluate(([x,y])=>window.__moveCur(x,y),[Math.round(box.x+box.width/2),Math.round(box.y+box.height/2)]); await sleep(950);} await clickFx(page); await m.click(); }
-  await sleep(2600)
-  await caption(page, 'Realization', 'Committed vs. risk-adjusted — what a CFO can actually bank.')
-  await page.evaluate(() => window.scrollTo({top:0,behavior:'smooth'}))
-  await sleep(2800)
+  // 5 — L5 granularity (the budgeting punchline)
+  await caption(page, '03 · L5 per asset', 'Down to L5: every line as Qty × Freq × Unit-rate × FX, with its budget code.')
+  { const t = page.locator('.tab', { hasText:'L5 per asset' }); const box = await t.boundingBox(); if(box){ await page.evaluate(([x,y])=>window.__moveCur(x,y),[Math.round(box.x+box.width/2),Math.round(box.y+box.height/2)]); await sleep(950); } await clickFx(page); await t.click(); }
+  await page.waitForSelector('table'); await sleep(2800)
+  await caption(page, 'Budget-ready', 'This is the granularity you’ll budget to — bottom-up, line by line, tied to SCM &amp; IPM.')
+  await moveTo(page, 'table tbody tr', 1)
+  await sleep(3400)
 
   // 6 — AI copilot
   await caption(page, '04 · AI Copilot', 'Ask the budget. The Copilot reasons over the real numbers.')
-  { const m = await page.locator('.tab', { hasText:'Cross-asset' }); await clickFx(page); await m.click(); }
+  { const t = page.locator('.tab', { hasText:'Cross-asset' }); const box = await t.boundingBox(); if(box){ await page.evaluate(([x,y])=>window.__moveCur(x,y),[Math.round(box.x+box.width/2),Math.round(box.y+box.height/2)]); await sleep(700); } await clickFx(page); await t.click(); }
   await sleep(900)
   await page.locator('.copilot button.pill', { hasText:'largest gap' }).scrollIntoViewIfNeeded()
   await sleep(500)

@@ -52,14 +52,14 @@ export function CopilotChat({ context, suggestions = [] }:
         }}>
           {messages.map((m, i) => (
             <div key={i} style={{
-              fontSize: 12, lineHeight: 1.5, whiteSpace: 'pre-wrap',
+              fontSize: 13.5, lineHeight: 1.55, whiteSpace: 'pre-wrap',
               color: m.role === 'user' ? 'var(--teal-bright)' : 'var(--text)',
               borderLeft: m.role === 'assistant' ? '2px solid var(--teal)' : 'none',
               paddingLeft: m.role === 'assistant' ? 8 : 0,
             }}>{m.content}</div>
           ))}
           {streaming && (
-            <div style={{ fontSize: 12, lineHeight: 1.5, whiteSpace: 'pre-wrap', color: 'var(--text)', borderLeft: '2px solid var(--teal)', paddingLeft: 8 }}>
+            <div style={{ fontSize: 13.5, lineHeight: 1.55, whiteSpace: 'pre-wrap', color: 'var(--text)', borderLeft: '2px solid var(--teal)', paddingLeft: 8 }}>
               {streaming}<span style={{ opacity: 0.5 }}>▋</span>
             </div>
           )}
@@ -91,8 +91,8 @@ export function CopilotChat({ context, suggestions = [] }:
           disabled={busy}
           style={{
             flex: 1, background: 'var(--panel, #0c1614)', color: 'var(--text)',
-            border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px',
-            fontSize: 12, fontFamily: 'inherit',
+            border: '1px solid var(--border)', borderRadius: 8, padding: '9px 11px',
+            fontSize: 13, fontFamily: 'inherit',
           }}
         />
         <button type="submit" disabled={busy || !input.trim()} className="pill gold"
