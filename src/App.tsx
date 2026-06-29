@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Fleet, Decision } from './domain/types'
 import { loadFleet } from './data/load'
-import { loadDecisions } from './domain/decision-store'
+import { loadDecisions, loadDecisionsRemote } from './domain/decision-store'
 import { LandingPage } from './screens/LandingPage'
 import { AssetDrill } from './screens/AssetDrill'
 import { DriverWorkspace } from './screens/DriverWorkspace'
@@ -24,13 +24,14 @@ const AMBITION: { label: string; cap: number }[] = [
 
 export default function App() {
   const [fleet, setFleet] = useState<Fleet | null>(null)
-  const [decisions] = useState<Decision[]>(loadDecisions())
+  const [decisions, setDecisions] = useState<Decision[]>(loadDecisions())
   const [screen, setScreen] = useState<Screen>('cross-asset')
   const [activeAsset, setActiveAsset] = useState<string>('MEB+DEB')
   const [activeBlock, setActiveBlock] = useState<string>('Consumable')
   const [cap, setCap] = useState(0.5)
 
   useEffect(() => { loadFleet().then(setFleet) }, [])
+  useEffect(() => { loadDecisionsRemote().then(setDecisions) }, [])
   if (!fleet) return <div className="wrap" style={{ color: 'var(--muted)' }}>Loading…</div>
 
   const nav = (
