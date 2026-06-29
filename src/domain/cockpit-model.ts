@@ -1,4 +1,5 @@
 import type { Asset, Fleet } from './types'
+import { COMPARABILITY_FLOOR, median } from './cost-taxonomy'
 
 /* ---------- format helpers ---------- */
 export const rpBn = (idr: number) => (idr / 1e9).toFixed(1)
@@ -108,7 +109,7 @@ export function normalizedBenchUsd(bestUsd: number, bestMw: number, mw: number, 
 }
 
 /* ---------- best-non-zero cross-asset matrix ---------- */
-export interface CockpitCell { code: string; mw: number; value_idr: number; usd: number; is_best: boolean; gap_idr: number; bench_usd: number }
+export interface CockpitCell { code: string; mw: number; value_idr: number; usd: number; is_best: boolean; gap_idr: number; bench_usd: number; is_outlier: boolean }
 export interface CockpitRow { block: string; semi: boolean; best: number; best_code: string; cells: CockpitCell[]; total_gap_idr: number }
 
 /** Assets sorted best -> worst by total $/kW-yr. */
@@ -139,16 +140,23 @@ export function buildCockpitMatrix(fleet: Fleet, mode: BenchmarkMode = 'absolute
       return { code: a.code, mw: a.mw, value_idr: v, usd: usdKw(v, a.mw, fx) }
     })
     const nz = raw.filter((c) => c.usd > 0)
-    const best = nz.length ? Math.min(...nz.map((c) => c.usd)) : 0
-    const bestCell = nz.find((c) => c.usd === best) ?? raw[0]
+    // Comparability guard: a plant booking << fleet median for this line is likely
+    // classified elsewhere — exclude it from setting the benchmark and flag it.
+    const med = median(nz.map((c) => c.usd))
+    const floor = med * COMPARABILITY_FLOOR
+    const comparable = nz.filter((c) => c.usd >= floor)
+    const pool = comparable.length ? comparable : nz
+    const best = pool.length ? Math.min(...pool.map((c) => c.usd)) : 0
+    const bestCell = pool.find((c) => c.usd === best) ?? raw[0]
     const best_code = bestCell.code
     let total_gap_idr = 0
     const cells: CockpitCell[] = raw.map((c) => {
+      const is_outlier = c.usd > 0 && c.usd < floor
       const benchUsd = normalizedBenchUsd(best, bestCell.mw, c.mw, mode)
       const bench = benchUsd * c.mw * 1000 * fx
       const gap = Math.max(0, c.value_idr - bench)
       total_gap_idr += gap
-      return { ...c, is_best: c.usd === best && c.usd > 0, gap_idr: gap, bench_usd: benchUsd }
+      return { ...c, is_best: c.usd === best && c.usd > 0 && !is_outlier, gap_idr: gap, bench_usd: benchUsd, is_outlier }
     })
     return { block: name, semi: !!semi[name], best, best_code, cells, total_gap_idr }
   })
