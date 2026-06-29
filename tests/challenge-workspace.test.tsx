@@ -1,9 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { ChallengeWorkspace } from '../src/screens/ChallengeWorkspace'
-import type { Fleet, Line } from '../src/domain/types'
-
-const fleet: Fleet = { fx_2026: 16500, best_in_fleet_code: 'DEB', assets: [] }
+import type { Line } from '../src/domain/types'
 
 const mk = (over: Partial<Line>): Line => ({
   budget_code: 'X', cost_block: 'Maintenance Cost', l3_activity: '', l4_equipment: '',
@@ -17,19 +15,24 @@ const lines: Line[] = [
   mk({ budget_code: 'ELB-USD', cost_block: 'Maintenance Service Agreement', value_idr: 5e9, original_currency: 'USD' }),
 ]
 
+const noop = () => {}
+
 describe('ChallengeWorkspace', () => {
   beforeEach(() => localStorage.clear())
 
-  it('renders ELB lump-sum challenges ranked by rupiah at stake', () => {
-    render(<ChallengeWorkspace assetCode="ELB" lines={lines} fleet={fleet}
-      decisions={[]} setDecisions={() => {}} />)
+  it('renders challenges ranked by rupiah at stake with the source badge', () => {
+    render(<ChallengeWorkspace assetCode="ELB" lines={lines} source="real"
+      decisions={[]} setDecisions={noop} onUpload={noop} onClear={noop} />)
     expect(screen.getAllByText(/ELB-TOP/).length).toBeGreaterThan(0)
     expect(screen.getAllByText(/build-up/).length).toBeGreaterThan(0)
+    expect(screen.getByText(/real sourced lines/)).toBeInTheDocument()
   })
 
-  it('shows a not-sourced message for assets without line detail', () => {
-    render(<ChallengeWorkspace assetCode="MEB" lines={[]} fleet={fleet}
-      decisions={[]} setDecisions={() => {}} />)
-    expect(screen.getByText(/not yet sourced/)).toBeInTheDocument()
+  it('labels modeled lines as modeled and offers upload + export', () => {
+    render(<ChallengeWorkspace assetCode="MEB+DEB" lines={lines} source="modeled"
+      decisions={[]} setDecisions={noop} onUpload={noop} onClear={noop} />)
+    expect(screen.getByText(/modeled should-cost lines/)).toBeInTheDocument()
+    expect(screen.getByText(/upload real lines/)).toBeInTheDocument()
+    expect(screen.getByText(/export write-back/)).toBeInTheDocument()
   })
 })
