@@ -105,7 +105,7 @@ export default function App() {
           onChallenge={() => setScreen('challenge')}
           onSelectAsset={setActiveAsset}
           onDrillBlock={(b) => { setActiveBlock(b); setScreen('l5') }} />}
-        {screen === 'l5' && <DriverWorkspace fleet={fleet} assetCode={activeAsset} block={activeBlock}
+        {screen === 'l5' && <DriverWorkspace fleet={fleet} assetCode={activeAsset} block={activeBlock} benchMode={benchMode}
           onSelectAsset={setActiveAsset} onSelectBlock={setActiveBlock} />}
         {screen === 'challenge' && <ChallengeWorkspace assetCode={activeAsset}
           lines={lineData.lines} source={lineData.source}
