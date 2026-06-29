@@ -4,6 +4,8 @@ import {
   rpBn, fmt, buildCockpitMatrix, sortedAssets, fleetTotal, fleetBestKw, fleetBestCode,
   fleetBestStake, tone, dotColor, NUMWORD,
 } from '../domain/cockpit-model'
+import { buildCopilotContext } from '../domain/ai/context'
+import { CopilotChat } from '../components/CopilotChat'
 
 export function LandingPage({ fleet, onDrill, cap: capProp, onCap }:
   { fleet: Fleet; onDrill: (code: string) => void; cap?: number; onCap?: (c: number) => void }) {
@@ -139,6 +141,15 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap }:
               </div>
             ))}
           </div>
+
+          <CopilotChat
+            context={buildCopilotContext(fleet, { cap, screen: 'cross-asset cockpit' })}
+            suggestions={[
+              `Why does ${worst.code} carry the largest gap?`,
+              `Draft a challenge memo for ${topLines[0]?.block}`,
+              'Which lines are semi-committed and need contract action?',
+            ]}
+          />
         </div>
       </div>
     </div>
