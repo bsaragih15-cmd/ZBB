@@ -118,10 +118,10 @@ export function BoardPack({ fleet, cap = 0.5, benchMode = 'absolute', decisions 
         </section>
 
         <section>
-          <h2 className="bd-h2">Committed initiatives</h2>
+          <h2 className="bd-h2">Challenge summary — lines challenged</h2>
           {committed.length ? (
             <table className="bd-table">
-              <thead><tr><th className="l">Budget code</th><th className="l">Lever</th><th className="l">Outcome</th><th>Committed saving (Rp Bn)</th><th>Decided</th></tr></thead>
+              <thead><tr><th className="l">Budget code</th><th className="l">Lever</th><th className="l">Outcome</th><th>Saving identified (Rp Bn)</th><th>Decided</th></tr></thead>
               <tbody>
                 {committed.map((d) => (
                   <tr key={d.budget_code + d.decided_at}>
@@ -132,11 +132,11 @@ export function BoardPack({ fleet, cap = 0.5, benchMode = 'absolute', decisions 
                     <td>{new Date(d.decided_at).toLocaleDateString('en-GB')}</td>
                   </tr>
                 ))}
-                <tr className="bd-total"><td className="l">Total committed</td><td /><td /><td>{rpBn(committedTot)}</td><td /></tr>
+                <tr className="bd-total"><td className="l">Total challenged</td><td /><td /><td>{rpBn(committedTot)}</td><td /></tr>
               </tbody>
             </table>
           ) : (
-            <p className="bd-muted bd-empty">No initiatives committed yet — log decisions in the Challenge workspace and they will roll up here.</p>
+            <p className="bd-muted bd-empty">No lines challenged yet — decisions taken in the Challenge workspace (accept / cut / defer) roll up here as a savings summary.</p>
           )}
         </section>
 
