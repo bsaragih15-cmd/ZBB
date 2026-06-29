@@ -6,14 +6,16 @@ import { loadDecisions, loadDecisionsRemote } from './domain/decision-store'
 import {
   resolveLines, parseLinesCsv, saveUploadedLines, clearUploadedLines, type LineSource,
 } from './data/line-source'
+import { FleetCockpit } from './screens/FleetCockpit'
 import { LandingPage } from './screens/LandingPage'
 import { AssetDrill } from './screens/AssetDrill'
 import { DriverWorkspace } from './screens/DriverWorkspace'
 import { ChallengeWorkspace } from './screens/ChallengeWorkspace'
 
-type Screen = 'cross-asset' | 'l3l4' | 'l5' | 'challenge'
+type Screen = 'fleet' | 'cross-asset' | 'l3l4' | 'l5' | 'challenge'
 
 const NAV: { id: Screen; label: string }[] = [
+  { id: 'fleet', label: 'Fleet overview' },
   { id: 'cross-asset', label: '1 · Cross-asset' },
   { id: 'l3l4', label: '2 · L3–L4 per asset' },
   { id: 'l5', label: '3 · L5 per asset' },
@@ -34,7 +36,7 @@ const AMBITION: { label: string; cap: number }[] = [
 export default function App() {
   const [fleet, setFleet] = useState<Fleet | null>(null)
   const [decisions, setDecisions] = useState<Decision[]>(loadDecisions())
-  const [screen, setScreen] = useState<Screen>('cross-asset')
+  const [screen, setScreen] = useState<Screen>('fleet')
   const [activeAsset, setActiveAsset] = useState<string>('MEB+DEB')
   const [activeBlock, setActiveBlock] = useState<string>('Consumable')
   const [cap, setCap] = useState(0.5)
@@ -99,6 +101,8 @@ export default function App() {
     <div>
       {nav}
       <div className="wrap">
+        {screen === 'fleet' && <FleetCockpit fleet={fleet} benchMode={benchMode}
+          onDrill={(code) => { setActiveAsset(code); setScreen('l3l4') }} />}
         {screen === 'cross-asset' && <LandingPage fleet={fleet} cap={cap} onCap={setCap} benchMode={benchMode}
           onDrill={(code) => { setActiveAsset(code); setScreen('l3l4') }} />}
         {screen === 'l3l4' && <AssetDrill fleet={fleet} assetCode={activeAsset} benchMode={benchMode}

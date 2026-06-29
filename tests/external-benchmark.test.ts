@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Fleet } from '../src/domain/types'
-import { externalTotalUsd, fleetExternalStake, DEFAULT_EXTERNAL } from '../src/domain/external-benchmark'
+import { externalTotalRange, externalStakeRange, DEFAULT_EXTERNAL } from '../src/domain/external-benchmark'
 
 const fleet: Fleet = {
   fx_2026: 16500, best_in_fleet_code: 'MRPR',
@@ -10,27 +10,25 @@ const fleet: Fleet = {
   ],
 }
 
-describe('external benchmark', () => {
-  it('sums per-line external $/kW into a total target', () => {
-    const t = externalTotalUsd(DEFAULT_EXTERNAL)
-    expect(t).toBeCloseTo(Object.values(DEFAULT_EXTERNAL).reduce((s, r) => s + r.usd, 0))
-    expect(t).toBeGreaterThan(0)
+describe('external benchmark (range)', () => {
+  it('sums per-line low/high into a total band with low < high', () => {
+    const t = externalTotalRange(DEFAULT_EXTERNAL)
+    expect(t.low).toBeLessThan(t.high)
+    expect(t.low).toBeCloseTo(Object.values(DEFAULT_EXTERNAL).reduce((s, r) => s + r.low, 0))
+    expect(t.high).toBeCloseTo(Object.values(DEFAULT_EXTERNAL).reduce((s, r) => s + r.high, 0))
   })
 
-  it('value-at-stake to external uses the external total as the target', () => {
-    const stake = fleetExternalStake(fleet, DEFAULT_EXTERNAL, 1)
-    const target = externalTotalUsd(DEFAULT_EXTERNAL)
-    // every plant above the external target contributes a positive gap
-    const elbGap = Math.max(0, 51.4 - target) * 109 * 1000 * 16500
-    expect(stake.by.ELB).toBeCloseTo(elbGap, -6)
-    expect(stake.target).toBeCloseTo(target)
-    expect(stake.tot).toBeGreaterThanOrEqual(stake.by.ELB)
+  it('stake range: deeper (low) target yields more potential than conservative (high)', () => {
+    const s = externalStakeRange(fleet, DEFAULT_EXTERNAL, 1)
+    expect(s.maxTot).toBeGreaterThanOrEqual(s.minTot)
+    expect(s.target.low).toBeLessThan(s.target.high)
+    // ELB at $51.4 exceeds both ends → positive gap at both
+    const elbDeep = Math.max(0, 51.4 - s.target.low) * 109 * 1000 * 16500
+    expect(s.byMax.ELB).toBeCloseTo(elbDeep, -6)
   })
 
-  it('reveals headroom beyond best-in-fleet when external < best', () => {
-    // DEFAULT_EXTERNAL total (~$38) is below MRPR's $45 best, so even the best
-    // plant carries an external gap → external stake exceeds internal-only.
-    const stake = fleetExternalStake(fleet, DEFAULT_EXTERNAL, 1)
-    expect(stake.by.MRPR).toBeGreaterThan(0)
+  it('reveals headroom beyond best-in-fleet (external low < $45 best)', () => {
+    const s = externalStakeRange(fleet, DEFAULT_EXTERNAL, 1)
+    expect(s.byMax.MRPR).toBeGreaterThan(0) // even the best plant has external headroom
   })
 })
