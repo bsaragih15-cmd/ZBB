@@ -45,17 +45,38 @@ export function parseFleet(raw: any): Fleet {
   return { fx_2026: raw.fx_2026, best_in_fleet_code: raw.best_in_fleet_code, assets }
 }
 
+/**
+ * Anonymise the real plant identities to generic labels so the cockpit can be
+ * shared externally. Applied at the load boundary, so every screen, the board
+ * pack, exports, and the copilot all see only the sanitised names — regardless
+ * of whether the data came from Supabase or the bundled JSON.
+ */
+const SANITIZE: Record<string, string> = {
+  MRPR: 'Asset 1',
+  ELB: 'Asset 2',
+  'MEB+DEB': 'Asset 3',
+}
+
+export function sanitizeFleet(fleet: Fleet): Fleet {
+  const map = (code: string) => SANITIZE[code] ?? code
+  return {
+    ...fleet,
+    best_in_fleet_code: map(fleet.best_in_fleet_code),
+    assets: fleet.assets.map((a) => ({ ...a, code: map(a.code), full_name: map(a.code) })),
+  }
+}
+
 export async function loadFleet(): Promise<Fleet> {
   // Prefer the shared Supabase backend; fall back to the bundled static JSON
   // when Supabase is unconfigured or unreachable.
   try {
     const remote = await fetchFleetFromSupabase()
-    if (remote) return parseFleet(remote)
+    if (remote) return sanitizeFleet(parseFleet(remote))
   } catch (e) {
     console.warn('[zbb] remote fleet load failed, using static JSON', e)
   }
   const res = await fetch('/data/fleet.json')
-  return parseFleet(await res.json())
+  return sanitizeFleet(parseFleet(await res.json()))
 }
 
 export async function loadElbLines(): Promise<Line[]> {

@@ -37,7 +37,7 @@ export default function App() {
   const [fleet, setFleet] = useState<Fleet | null>(null)
   const [decisions, setDecisions] = useState<Decision[]>(loadDecisions())
   const [screen, setScreen] = useState<Screen>('cross-asset')
-  const [activeAsset, setActiveAsset] = useState<string>('MEB+DEB')
+  const [activeAsset, setActiveAsset] = useState<string>('Asset 3')
   const [activeBlock, setActiveBlock] = useState<string>('Consumable')
   const [cap, setCap] = useState(0.5)
   const [benchMode, setBenchMode] = useState<BenchmarkMode>('absolute')
