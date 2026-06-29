@@ -6,6 +6,7 @@ import {
   normalizedBenchUsd, tone, L4, DRV_FORMULA,
 } from '../domain/cockpit-model'
 import { loadYoY, yoyDelta, priorIdr, PRIOR_LABEL } from '../domain/prior-year'
+import { ownerFor } from '../domain/owners'
 
 const yoyColor = (pct: number) => (pct > 0.1 ? 'var(--amber)' : pct > 0 ? 'var(--text)' : 'var(--green)')
 
@@ -97,7 +98,9 @@ export function AssetDrill({ fleet, assetCode, onChallenge, onSelectAsset, onDri
                     <Fragment key={r.b.name}>
                       <tr className="clickable" onClick={() => toggle(i)}>
                         <td className="l"><span className={`caret ${open.has(i) ? 'open' : ''}`}>▸</span></td>
-                        <td className="l">{r.b.name}{r.b.semi_committed && <span className="semi">semi</span>}</td>
+                        <td className="l">{r.b.name}{r.b.semi_committed && <span className="semi">semi</span>}
+                          <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted-2)', fontWeight: 400, marginTop: 2 }}
+                            title={ownerFor(r.b.name).role}>◷ {ownerFor(r.b.name).name}</div></td>
                         <td style={{ color: 'var(--muted)' }}>${r.priorU.toFixed(1)}</td>
                         <td style={{ color: r.fg, fontWeight: 600 }}>${r.u.toFixed(1)}</td>
                         <td title={`+Rp ${rpBn2(r.dy.delta_idr)} Bn vs 2025`} style={{ color: yoyColor(r.dy.pct), fontWeight: 600 }}>{r.dy.pct >= 0 ? '+' : ''}{(r.dy.pct * 100).toFixed(1)}%</td>
