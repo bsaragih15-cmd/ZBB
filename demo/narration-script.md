@@ -5,8 +5,13 @@ Timed to the refreshed ~68s guided tour (`demo-videos/zbb-cockpit-tour-1080.mp4`
 
 > The plant identities are anonymised to **Asset 1 / Asset 2 / Asset 3** throughout
 > the tour. This cut adds the external market band, cost-line owners + the 2025→2026
-> increase, and a board-pack finale. Generate the VO from this script and I'll
-> re-mux it onto the tour.
+> increase, and a board-pack finale.
+>
+> **Narrated cuts shipped:** `demo-videos/zbb-cockpit-tour-1080-narrated.mp4` and
+> `-4k-narrated.mp4`, with `demo/audio/narration-mark.mp3` (ElevenLabs “Mark —
+> Natural Conversations”). The VO runs ~94s, so the silent ~68s tour is slowed
+> uniformly (×1.387) in the narrated cuts to end together. Re-run the mux if you
+> regenerate the VO at a different length.
 
 ## Suggested ElevenLabs settings
 - **Voice:** a calm, professional narrator. **Model:** Eleven Multilingual v2.
