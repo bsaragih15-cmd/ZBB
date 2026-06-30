@@ -1,0 +1,118 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+  :root{--bg:#060a09;--panel:#0c1311;--panel2:#0f1815;--bd:rgba(125,180,168,.16);--teal:#2DD4BF;--tealb:#5EEAD4;
+    --gold:#E8B339;--blue:#5B9BF5;--green:#34D399;--text:#DDE7E4;--muted:#7E8E89;--mono:ui-monospace,Menlo,monospace}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Inter,system-ui,sans-serif;color:var(--text);background:#000}
+  .slide{width:1920px;height:1080px;position:relative;overflow:hidden;
+    background:radial-gradient(1200px 700px at 30% -10%,rgba(45,212,191,.08),transparent 60%),var(--bg);padding:64px 72px}
+  .brand{display:flex;align-items:center;gap:14px;font-weight:800;font-size:34px;letter-spacing:-.01em}
+  .glyph{width:20px;height:20px;border-radius:6px;background:var(--teal);box-shadow:0 0 22px var(--teal)}
+  .kick{font-family:var(--mono);font-size:15px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .head{display:flex;justify-content:space-between;align-items:flex-start}
+  .h1{font-size:40px;font-weight:800;letter-spacing:-.02em;margin-top:18px;line-height:1.15}
+  .h1 .t{color:var(--tealb)} .h1 .g{color:var(--gold)}
+  .sub{font-size:19px;color:var(--muted);margin-top:10px;max-width:1180px;line-height:1.5}
+  /* slide 1 body */
+  .body{display:flex;gap:40px;margin-top:30px;height:790px}
+  .shot{position:relative;width:1000px;flex:none;border:1px solid var(--bd);border-radius:16px;overflow:hidden;
+    box-shadow:0 24px 80px rgba(0,0,0,.55)}
+  .shot img{width:100%;display:block}
+  .pin{position:absolute;width:42px;height:42px;border-radius:50%;background:var(--teal);color:#04120f;
+    font-weight:800;font-size:21px;display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);
+    box-shadow:0 0 0 5px rgba(45,212,191,.25),0 6px 16px rgba(0,0,0,.5);border:2px solid #04120f}
+  .legend{flex:1;display:flex;flex-direction:column;gap:16px;padding-top:4px}
+  .item{display:flex;gap:16px;align-items:flex-start}
+  .num{width:38px;height:38px;flex:none;border-radius:50%;background:rgba(45,212,191,.14);color:var(--tealb);
+    font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;border:1px solid var(--bd)}
+  .it{font-size:21px;font-weight:700;margin-bottom:3px}
+  .id{font-size:16.5px;color:var(--muted);line-height:1.45}
+  .ai{margin-top:6px;background:linear-gradient(180deg,rgba(45,212,191,.08),rgba(45,212,191,.02));
+    border:1px solid rgba(45,212,191,.32);border-radius:14px;padding:18px 20px}
+  .ai .t{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;color:var(--tealb)}
+  .ai .d{font-size:16.5px;color:#bfe9e0;margin-top:7px;line-height:1.5}
+  .foot{position:absolute;left:72px;bottom:34px;font-family:var(--mono);font-size:13.5px;color:var(--muted);letter-spacing:.05em}
+  .pageno{position:absolute;right:72px;bottom:34px;font-family:var(--mono);font-size:13.5px;color:var(--muted)}
+  /* slide 2 */
+  .flow{display:flex;gap:14px;margin-top:26px}
+  .step{flex:1;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--bd);border-radius:14px;padding:18px 18px 20px}
+  .step .n{font-family:var(--mono);font-size:13px;color:var(--teal);letter-spacing:.1em}
+  .step .st{font-size:20px;font-weight:800;margin:8px 0 6px} .step .sd{font-size:15px;color:var(--muted);line-height:1.45}
+  .arrow{align-self:center;color:var(--muted);font-size:26px;flex:none}
+  .grid2{display:flex;gap:28px;margin-top:30px;height:430px}
+  .cap{position:relative;flex:1;border:1px solid var(--bd);border-radius:14px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.5)}
+  .cap img{width:100%;display:block}
+  .cap .lab{position:absolute;left:0;bottom:0;right:0;background:linear-gradient(0deg,rgba(6,10,9,.96),transparent);
+    padding:26px 20px 16px;font-size:16px}
+  .cap .lab b{font-size:18px;color:var(--tealb)}
+  .cards{display:flex;gap:16px;margin-top:26px}
+  .card{flex:1;background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:16px 18px}
+  .card .ct{font-weight:800;font-size:17px;margin-bottom:5px} .card .cd{font-size:14.5px;color:var(--muted);line-height:1.4}
+</style></head><body>
+
+<!-- ============ SLIDE 1 ============ -->
+<div class="slide" id="s1">
+  <div class="head">
+    <div class="brand"><span class="glyph"></span>MPI Cost Cockpit</div>
+    <div class="kick">Zero-Based Budgeting · Cost-Out Stress-Test</div>
+  </div>
+  <div class="h1">Benchmark every plant's controllable O&amp;M to <span class="t">best-in-fleet</span>, quantify the <span class="g">gap to best</span>, and challenge it — line by line.</div>
+  <div class="sub">One cockpit for the 2026 O&amp;M budget across a gas-CCGT fleet: where the money sits, how far each plant is from the best, and how much is freed by closing the gap. Numbers illustrative; plant names anonymised.</div>
+
+  <div class="body">
+    <div class="shot">
+      <img src="shot-cross.png">
+      <div class="pin" style="left:40%;top:33.5%">2</div>
+      <div class="pin" style="left:70%;top:43%">3</div>
+      <div class="pin" style="left:12%;top:48.5%">4</div>
+      <div class="pin" style="left:47%;top:64%">1</div>
+      <div class="pin" style="left:90%;top:13%">5</div>
+    </div>
+    <div class="legend">
+      <div class="item"><div class="num">1</div><div><div class="it">Benchmark heatmap ($/kW-yr)</div><div class="id">Every cost line (L3) for every plant, coloured against the fleet's best. Green = best-in-fleet; red = the gap.</div></div></div>
+      <div class="item"><div class="num">2</div><div><div class="it">Value-at-stake dial</div><div class="id">Drag the ambition (capture share of the gap). <b>Internal</b> = match the best plant; <b>External</b> = reach the market band.</div></div></div>
+      <div class="item"><div class="num">3</div><div><div class="it">External market band</div><div class="id">A top-quartile reference range per line — the headroom beyond your own best plant.</div></div></div>
+      <div class="item"><div class="num">4</div><div><div class="it">Accountable owners</div><div class="id">Every cost line carries a named owner — the governance spine of a ZBB process.</div></div></div>
+      <div class="item"><div class="num">5</div><div><div class="it">AI Cost Copilot</div><div class="id">Recommended challenges + a chat grounded in the live numbers.</div></div></div>
+      <div class="ai"><div class="t">◇ Like-for-like &amp; size-normalized</div><div class="d">Toggle the benchmark to strip the scale advantage out of the gap, so the target is one a plant manager can defend.</div></div>
+    </div>
+  </div>
+  <div class="foot">Live on Vercel · React + Supabase · AI by Claude</div>
+  <div class="pageno">1 / 2</div>
+</div>
+
+<!-- ============ SLIDE 2 ============ -->
+<div class="slide" id="s2">
+  <div class="head">
+    <div class="brand"><span class="glyph"></span>MPI Cost Cockpit</div>
+    <div class="kick">Capabilities &amp; AI</div>
+  </div>
+  <div class="h1">From fleet benchmark to a <span class="t">board-ready pack</span> — drill, challenge, and decide at budget granularity.</div>
+
+  <div class="flow">
+    <div class="step"><div class="n">01</div><div class="st">Cross-asset</div><div class="sd">Benchmark all plants; size the gap to best and to the market.</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">02</div><div class="st">L3–L4 drill</div><div class="sd">Cost blocks vs 2025, the YoY increase, owner, and gap to best.</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">03</div><div class="st">L5 should-cost</div><div class="sd">Qty × Freq × Rate × FX per line — booked vs should-cost.</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">04</div><div class="st">Challenge</div><div class="sd">Accept / cut / defer with a ZBB lever; export to IPM/SCM.</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">05</div><div class="st">Board pack</div><div class="sd">One-click PDF: cost summary, owners, lines challenged.</div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="cap"><img src="shot-l5.png" style="margin-top:-150px"><div class="lab"><b>L5 should-cost</b> — driver-based, bottom-up, tied to budget codes</div></div>
+    <div class="cap"><img src="shot-board.png" style="margin-top:-150px"><div class="lab"><b>Board pack</b> — exec-ready, exports to PDF</div></div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="ct">◇ AI Cost Copilot</div><div class="cd">Streaming chat grounded in the live cockpit numbers — drafts challenge memos and the questions each owner must answer. Never invents figures.</div></div>
+    <div class="card"><div class="ct">Shared &amp; backed</div><div class="cd">Fleet data + decisions persist in Supabase; the audit log captures every challenge. Deploys continuously on Vercel.</div></div>
+    <div class="card"><div class="ct">Defensible benchmarks</div><div class="cd">Best-in-fleet, size-normalized comparability, should-cost, and an external market band — with owners accountable for each line.</div></div>
+  </div>
+  <div class="foot">Live on Vercel · React + Supabase · AI by Claude (claude-opus-4-8)</div>
+  <div class="pageno">2 / 2</div>
+</div>
+
+</body></html>
