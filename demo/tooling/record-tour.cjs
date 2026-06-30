@@ -39,107 +39,108 @@ async function setup(page){
 
 async function caption(page, kicker, text){ await page.evaluate(([k,t]) => window.__cap2(k,t), [kicker, text]) }
 async function hideCap(page){ await page.evaluate(() => window.__capHide()) }
-async function moveTo(page, sel, nth=0){
-  const el = page.locator(sel).nth(nth)
-  const box = await el.boundingBox()
-  if(!box) return null
-  const x = Math.round(box.x + box.width/2), y = Math.round(box.y + box.height/2)
-  await page.evaluate(([x,y]) => window.__moveCur(x,y), [x,y])
-  await sleep(950)
-  return { el, x, y }
-}
 async function clickFx(page){ await page.evaluate(() => window.__click()); await sleep(120) }
 async function moveToLoc(page, loc){
   const box = await loc.boundingBox(); if(!box) return false
   await page.evaluate(([x,y]) => window.__moveCur(x,y), [Math.round(box.x + box.width/2), Math.round(box.y + box.height/2)])
-  await sleep(900); return true
+  return true
+}
+async function moveTo(page, sel, nth=0){
+  const loc = page.locator(sel).nth(nth)
+  const ok = await moveToLoc(page, loc)
+  return ok ? { el: loc } : null
 }
 
 ;(async () => {
   const b = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args:['--no-sandbox','--no-proxy-server'] })
   const ctx = await b.newContext({ viewport:{width:1920,height:1080}, recordVideo:{ dir: OUT, size:{width:1920,height:1080} } })
+  const vstart = Date.now() // recording begins ~here
   const page = await ctx.newPage()
   await page.goto('http://localhost:5050/', { waitUntil:'load' })
-  await page.waitForSelector('.scard'); await sleep(900)
+  await page.waitForSelector('.scard'); await sleep(700)
   await setup(page)
 
-  // 1 — intro
-  await caption(page, 'MPI Cost Cockpit', 'Zero-based budgeting for a fleet of gas-CCGT plants — controllable O&amp;M, benchmarked to best.')
-  await sleep(3200)
+  // timeline anchored to the VO (silence-gap aligned, see narration-script.md)
+  const t0 = Date.now()
+  const at = async (sec) => { const w = sec*1000 - (Date.now()-t0); if (w > 0) await sleep(w) }
 
-  // 2 — headline / entity cards
+  // S1 — intro (0.0)
+  await at(0.0)
+  await caption(page, 'MPI Cost Cockpit', 'Zero-based budgeting for a fleet of gas-CCGT plants — controllable O&amp;M, benchmarked to best.')
+
+  // S2 — cross-asset (7.5) + external band (17.1)
+  await at(7.5)
   await caption(page, '01 · Cross-asset', 'Two of three plants run above Asset&nbsp;1’s $45 / kW-yr best — Rp&nbsp;36.5&nbsp;Bn of gap to close.')
   await moveTo(page, '.scard', 2)
-  await sleep(2600)
-
-  // 2b — external market band
-  await caption(page, 'External band', 'Each line benchmarked to fleet best — and to an external market band, so you see the headroom beyond your own best plant.')
+  await at(17.1)
+  await caption(page, 'External band', 'Each line is also held against an external market band — the headroom beyond your own best plant.')
   await moveTo(page, 'table thead th', 4)
-  await sleep(3200)
 
-  // 3 — like-for-like benchmark toggle
+  // S3 — like-for-like (24.4) + ambition dial (31.6)
+  await at(24.4)
   await caption(page, 'Like-for-like', 'Normalize for plant size — strip the scale advantage out of the gap.')
   { const lf = page.locator('.seg button', { hasText: 'Like-for-like' }); await moveToLoc(page, lf); await clickFx(page); await lf.click() }
-  await sleep(2800)
+  await at(30.2)
   { const ab = page.locator('.seg button', { hasText: 'Absolute' }); await moveToLoc(page, ab); await clickFx(page); await ab.click() }
-  await sleep(700)
+  await at(31.6)
+  await caption(page, 'Ambition', 'Then dial the capture share of the gap — the value-at-stake updates live.')
+  await moveTo(page, 'input[type=range]')
+  for (const v of [60,75,88,70,50]) {
+    await page.evaluate((val) => { const r=document.querySelector('input[type=range]'); const set=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set; set.call(r,val); r.dispatchEvent(new Event('input',{bubbles:true})) }, v)
+    await sleep(420)
+  }
 
-  // 4 — ambition + live dial
-  await caption(page, 'Ambition', 'Dial the capture share of the gap — the value-at-stake updates live.')
-  { await moveTo(page, 'input[type=range]')
-    for (const v of [60,75,88,70,50]) {
-      await page.evaluate((val) => { const r=document.querySelector('input[type=range]'); const set=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set; set.call(r,val); r.dispatchEvent(new Event('input',{bubbles:true})) }, v)
-      await sleep(380)
-    } }
-  await sleep(1400)
-
-  // 5 — L3–L4 granularity: 2025 vs 2026, owners
-  await caption(page, '02 · L3–L4 per asset', 'Drill any plant — every cost block vs 2025, the YoY increase it carries, and a named accountable owner.')
+  // S4 — L3–L4 (37.9) + L4 families (43.0)
+  await at(37.9)
+  await caption(page, '02 · L3–L4 per asset', 'Drill any plant — every cost block vs last year, the increase it carries, and a named owner.')
   { const m = await moveTo(page, '.scard', 2); await clickFx(page); if(m) await m.el.click(); }
-  await page.waitForSelector('tr.clickable'); await sleep(3200)
+  await page.waitForSelector('tr.clickable')
+  await at(43.0)
   await caption(page, 'L4 families', 'Expand a block to its driver families — the groupings each line rolls up to.')
   { const m = await moveTo(page, 'tr.clickable', 0); await clickFx(page); if(m) await m.el.click(); }
-  await sleep(2600)
 
-  // 6 — L5 granularity (booked vs should-cost)
+  // S5 — L5 (46.2)
+  await at(46.2)
   await caption(page, '03 · L5 per asset', 'Down to L5: Qty × Freq × Unit-rate × FX — booked vs should-cost, line by line.')
   { const t = page.locator('.tab', { hasText: 'L5 per asset' }); await moveToLoc(page, t); await clickFx(page); await t.click() }
-  await page.waitForSelector('table'); await sleep(3000)
+  await page.waitForSelector('table')
 
-  // 7 — Challenge + write-back export
+  // S6 — Challenge (56.3) + write-back (63.5)
+  await at(56.3)
   await caption(page, '04 · Challenge', 'Log the call — accept, cut or defer with a ZBB lever.')
   { const t = page.locator('.tab', { hasText: 'Challenge' }); await moveToLoc(page, t); await clickFx(page); await t.click() }
-  await page.waitForSelector('select'); await sleep(2200)
+  await page.waitForSelector('select')
   { const lg = page.locator('button', { hasText: 'Log decision' }).first(); if(await moveToLoc(page, lg)){ await clickFx(page); await lg.click() } }
-  await sleep(1500)
+  await at(63.5)
   await caption(page, 'Write-back', 'Committed savings export to the IPM / SCM tracker, keyed on budget code.')
   { const ex = page.locator('button', { hasText: 'export' }).first(); await moveToLoc(page, ex) }
-  await sleep(2400)
 
-  // 8 — AI copilot
+  // S7 — Copilot (70.3)
+  await at(70.3)
   await caption(page, '05 · AI Copilot', 'Ask the budget. The Copilot reasons over the real numbers — grounded, not generic.')
   { const t = page.locator('.tab', { hasText: 'Cross-asset' }); await moveToLoc(page, t); await clickFx(page); await t.click() }
-  await sleep(900)
   await page.locator('.copilot button.pill', { hasText:'largest gap' }).scrollIntoViewIfNeeded()
-  await sleep(500)
   { const m = await moveTo(page, '.copilot button.pill', 0); await clickFx(page); if(m) await m.el.click(); }
-  await sleep(8000)
 
-  // 9 — Board pack
-  await caption(page, 'Board pack', 'One click to a board-ready pack — the cost summary, gaps by plant and line, and what’s been challenged — export to PDF.')
+  // S8 — Board pack (77.1)
+  await at(77.1)
+  await caption(page, 'Board pack', 'One click to a board-ready pack — the cost summary, gaps by plant and line, and what’s been challenged.')
   { const t = page.locator('.tab', { hasText: 'Board pack' }); await moveToLoc(page, t); await clickFx(page); await t.click() }
-  await page.waitForSelector('.board'); await sleep(900)
+  await page.waitForSelector('.board')
   await page.evaluate(() => window.scrollTo({ top: 0 }))
   await moveTo(page, '.board-actions .tab', 0)
-  await sleep(3400)
 
-  // 10 — outro
+  // S9 — outro (87.1)
+  await at(87.1)
   await caption(page, 'MPI Cost Cockpit', 'Benchmark, challenge, and budget — zero-based, end to end.')
   await page.evaluate(() => { window.scrollTo({ top: 0 }); window.__moveCur(960, 980) })
-  await sleep(3000)
-  await hideCap(page); await sleep(600)
+  await at(92.6)
+  await hideCap(page)
+  await at(94.4)
 
+  const preroll = (t0 - vstart) / 1000
   const vpath = await page.video().path()
   await ctx.close(); await b.close()
+  console.log('PREROLL=' + preroll.toFixed(3))
   console.log('VIDEO=' + vpath)
 })()
