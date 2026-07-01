@@ -16,22 +16,22 @@ export function LandingPage({ fleet, onDrill, benchMode = 'absolute' }:
   const head = fleetBestStake(fleet, 1, benchMode) // full gap to best
   const external = loadExternal()
   const extRange = externalTotalRange(external)
-  // value-at-stake per cost line: the fleet's asset-level gap-to-best, decomposed across cost
-  // lines by each line's share of the asset's spend, ranged like-for-like → absolute. Sums to the
-  // headline gap-to-best (36.6 Bn absolute), matching the title.
-  const gapAbs = fleetBestStake(fleet, 1, 'absolute')
-  const gapNorm = fleetBestStake(fleet, 1, 'normalized')
-  const lineStake = (block: string, gapBy: Record<string, number>) =>
+  // value-at-stake per cost line: the fleet's asset-level gap-to-best (matching the headline),
+  // decomposed across cost lines by each line's share of the asset's spend. Shown as a range from
+  // realistic capture (CAPTURE_RATE of the raw gap) → full gap, so the total ties to the headline
+  // (~Rp 26–37 Bn) rather than implying every rupiah is recoverable.
+  const CAPTURE_RATE = 0.7
+  const lineStake = (block: string) =>
     assets.reduce((s, a) => {
       const c = matrix.find((m) => m.block === block)?.cells.find((x) => x.code === a.code)
       const share = a.usd_per_kw_yr > 0 && c ? c.usd / a.usd_per_kw_yr : 0
-      return s + (gapBy[a.code] ?? 0) * share
+      return s + (head.by[a.code] ?? 0) * share
     }, 0)
   const gapRange = (block: string) => {
-    const n = lineStake(block, gapNorm.by), a = lineStake(block, gapAbs.by)
-    return { lo: Math.min(n, a), hi: Math.max(n, a) }
+    const hi = lineStake(block)
+    return { lo: hi * CAPTURE_RATE, hi }
   }
-  const gapTotals = { lo: Math.min(gapNorm.tot, gapAbs.tot), hi: Math.max(gapNorm.tot, gapAbs.tot) }
+  const gapTotals = { lo: head.tot * CAPTURE_RATE, hi: head.tot }
   const total = fleetTotal(fleet)
   const bestKw = fleetBestKw(fleet)
   const bestCode = fleetBestCode(fleet)
@@ -89,7 +89,7 @@ export function LandingPage({ fleet, onDrill, benchMode = 'absolute' }:
                       <div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>${a.usd_per_kw_yr.toFixed(0)}/kW</div></th>
                   ))}
                   <th title={EXTERNAL_LABEL} style={{ color: 'var(--blue)' }}>External<div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>$/kW · mkt band</div></th>
-                  <th title="Value-at-stake per line = gap-to-best, ranged like-for-like (conservative) → absolute (raw)">Value at stake<div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>Rp Bn · gap to best</div></th>
+                  <th title="Value-at-stake per line = share of the gap-to-best, ranged realistic capture (70%) → full gap. Sums to the headline gap.">Value at stake<div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>Rp Bn · gap to best</div></th>
                 </tr>
               </thead>
               <tbody>
