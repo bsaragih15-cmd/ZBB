@@ -111,13 +111,13 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
                       const c = row.cells.find((x) => x.code === a.code)!
                       if (c.is_outlier) {
                         return <td key={a.code} title="likely classified elsewhere — excluded from benchmark"
-                          style={{ background: 'rgba(255,255,255,0.03)', color: 'var(--muted-2)', fontWeight: 500 }}>${c.usd.toFixed(1)} ⚑</td>
+                          style={{ background: 'rgba(120,100,70,0.06)', color: 'var(--muted-2)', fontWeight: 500 }}>${c.usd.toFixed(1)} ⚑</td>
                       }
                       const [bg, fg] = tone(c.usd, row.best, c.is_best)
                       return <td key={a.code} style={{ background: bg, color: fg, fontWeight: c.is_best ? 700 : 500 }}>${c.usd.toFixed(1)}</td>
                     })}
                     {(() => { const e = external[row.block]; return (
-                      <td title={e?.source} className="mono" style={{ color: 'var(--blue)', background: 'rgba(91,155,245,0.07)', fontSize: 11 }}>
+                      <td title={e?.source} className="mono" style={{ color: 'var(--blue)', background: 'rgba(94,124,138,0.10)', fontSize: 11 }}>
                         {e ? `$${e.low.toFixed(1)}–${e.high.toFixed(1)}` : '—'}</td>
                     ) })()}
                     <td style={{ color: 'var(--muted)' }}>{(row.total_gap_idr * cap / 1e9).toFixed(1)}</td>
