@@ -191,11 +191,11 @@ export function fleetBestStake(fleet: Fleet, cap: number, mode: BenchmarkMode = 
 
 /** [bg, fg] tone for a heatmap cell vs the best-in-line. */
 export function tone(usd: number, best: number, isBest: boolean): [string, string] {
-  if (isBest || best === 0 || usd === 0) return ['rgba(52,211,153,0.14)', 'var(--green)']
+  if (isBest || best === 0 || usd === 0) return ['rgba(110,127,78,0.18)', 'var(--green)']
   const r = usd / best
-  if (r <= 1.15) return ['rgba(52,211,153,0.14)', 'var(--green)']
-  if (r <= 1.6) return ['rgba(224,169,59,0.14)', 'var(--amber)']
-  return ['rgba(248,113,106,0.14)', 'var(--red)']
+  if (r <= 1.15) return ['rgba(110,127,78,0.18)', 'var(--green)']
+  if (r <= 1.6) return ['rgba(192,138,46,0.18)', 'var(--amber)']
+  return ['rgba(180,85,60,0.16)', 'var(--red)']
 }
 
 export const dotColor = (gapBn: number, isBest: boolean) =>
