@@ -27,19 +27,12 @@ const BENCH: { label: string; mode: BenchmarkMode }[] = [
   { label: 'Like-for-like', mode: 'normalized' },
 ]
 
-const AMBITION: { label: string; cap: number }[] = [
-  { label: 'Light · 25%', cap: 0.25 },
-  { label: 'Base · 50%', cap: 0.5 },
-  { label: 'Stretch · 100%', cap: 1 },
-]
-
 export default function App() {
   const [fleet, setFleet] = useState<Fleet | null>(null)
   const [decisions, setDecisions] = useState<Decision[]>(loadDecisions())
   const [screen, setScreen] = useState<Screen>('cross-asset')
   const [activeAsset, setActiveAsset] = useState<string>('Asset 3')
   const [activeBlock, setActiveBlock] = useState<string>('Consumable')
-  const [cap, setCap] = useState(0.5)
   const [benchMode, setBenchMode] = useState<BenchmarkMode>('absolute')
   const [lineData, setLineData] = useState<{ lines: Line[]; source: LineSource }>({ lines: [], source: 'modeled' })
 
@@ -87,14 +80,6 @@ export default function App() {
               onClick={() => setBenchMode(b.mode)}>{b.label}</button>
           ))}
         </div>
-        <span className="lbl" id="amb-lbl">ambition</span>
-        <div className="seg" role="group" aria-labelledby="amb-lbl">
-          {AMBITION.map((a) => (
-            <button key={a.label} aria-pressed={Math.round(cap * 100) === Math.round(a.cap * 100)}
-              className={Math.round(cap * 100) === Math.round(a.cap * 100) ? 'on' : ''}
-              onClick={() => setCap(a.cap)}>{a.label}</button>
-          ))}
-        </div>
       </div>
     </nav>
   )
@@ -117,7 +102,7 @@ export default function App() {
       {nav}
       <main className="wrap">
         {crumbs}
-        {screen === 'cross-asset' && <LandingPage fleet={fleet} cap={cap} onCap={setCap} benchMode={benchMode}
+        {screen === 'cross-asset' && <LandingPage fleet={fleet} benchMode={benchMode}
           onDrill={(code) => { setActiveAsset(code); setScreen('l3l4') }} />}
         {screen === 'l3l4' && <AssetDrill fleet={fleet} assetCode={activeAsset} benchMode={benchMode}
           onChallenge={() => setScreen('challenge')}
@@ -128,7 +113,7 @@ export default function App() {
         {screen === 'challenge' && <ChallengeWorkspace assetCode={activeAsset}
           lines={lineData.lines} source={lineData.source}
           decisions={decisions} setDecisions={setDecisions} onUpload={onUpload} onClear={onClear} />}
-        {screen === 'board' && <BoardPack fleet={fleet} cap={cap} benchMode={benchMode} decisions={decisions} />}
+        {screen === 'board' && <BoardPack fleet={fleet} benchMode={benchMode} decisions={decisions} />}
       </main>
     </div>
   )

@@ -6,7 +6,6 @@ import {
   normalizedBenchUsd, tone, L4, DRV_FORMULA,
 } from '../domain/cockpit-model'
 import { loadYoY, yoyDelta, priorIdr, PRIOR_LABEL } from '../domain/prior-year'
-import { ownerFor } from '../domain/owners'
 
 const yoyColor = (pct: number) => (pct > 0.1 ? 'var(--amber)' : pct > 0 ? 'var(--text)' : 'var(--green)')
 
@@ -86,28 +85,23 @@ export function AssetDrill({ fleet, assetCode, onChallenge, onSelectAsset, onDri
                   <th title={PRIOR_LABEL} style={{ color: 'var(--muted)' }}>2025 $/kW</th>
                   <th>2026 $/kW</th>
                   <th title="Increase the 2026 submission carries over the modelled 2025 baseline">Δ vs '25</th>
-                  <th>Fleet best</th><th>Rp Bn</th><th>Gap Rp Bn</th>
-                  <th className="l" style={{ width: 150 }}>vs fleet</th><th />
+                  <th>Fleet best</th><th>Rp Bn</th><th>Gap Rp Bn</th><th />
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r, i) => {
                   const fams = L4[r.b.name] ?? [[r.b.name, 'contract', 1] as [string, 'contract', number]]
-                  const barW = r.maxU > 0 ? Math.round(r.u / r.maxU * 100) : 0
                   return (
                     <Fragment key={r.b.name}>
                       <tr className="clickable" onClick={() => toggle(i)}>
                         <td className="l"><span className={`caret ${open.has(i) ? 'open' : ''}`}>▸</span></td>
-                        <td className="l">{r.b.name}{r.b.semi_committed && <span className="semi">semi</span>}
-                          <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted-2)', fontWeight: 400, marginTop: 2 }}
-                            title={ownerFor(r.b.name).role}>◷ {ownerFor(r.b.name).name}</div></td>
+                        <td className="l">{r.b.name}{r.b.semi_committed && <span className="semi">semi</span>}</td>
                         <td style={{ color: 'var(--muted)' }}>${r.priorU.toFixed(1)}</td>
                         <td style={{ color: r.fg, fontWeight: 600 }}>${r.u.toFixed(1)}</td>
                         <td title={`+Rp ${rpBn2(r.dy.delta_idr)} Bn vs 2025`} style={{ color: yoyColor(r.dy.pct), fontWeight: 600 }}>{r.dy.pct >= 0 ? '+' : ''}{(r.dy.pct * 100).toFixed(1)}%</td>
                         <td style={{ color: 'var(--muted)' }}>${r.m.best.toFixed(1)} <span className="mono" style={{ fontSize: 9 }}>{r.m.best_code}</span></td>
                         <td>{rpBn(r.b.value_idr)}</td>
                         <td style={{ color: r.cell.gap_idr > 0 ? 'var(--amber)' : 'var(--muted-2)', fontWeight: 600 }}>{r.cell.gap_idr > 0 ? rpBn(r.cell.gap_idr) : '—'}</td>
-                        <td className="l"><span className="bar"><i style={{ width: `${barW}%`, background: r.fg }} /></span></td>
                         <td><button className="link" onClick={(e) => { e.stopPropagation(); drill(r.b.name) }}>L5 →</button></td>
                       </tr>
                       {open.has(i) && fams.map(([fam, drv]) => (
@@ -117,7 +111,7 @@ export function AssetDrill({ fleet, assetCode, onChallenge, onSelectAsset, onDri
                           <td colSpan={2} style={{ textAlign: 'left', color: 'var(--muted)', fontFamily: 'var(--mono)', fontSize: 10 }}>{DRV_FORMULA[drv]}</td>
                           <td />
                           <td>{rpBn2(r.b.value_idr * (fams.find((f) => f[0] === fam)![2]))}</td>
-                          <td colSpan={2} /><td><button className="link" onClick={(e) => { e.stopPropagation(); drill(r.b.name) }}>L5 →</button></td>
+                          <td /><td><button className="link" onClick={(e) => { e.stopPropagation(); drill(r.b.name) }}>L5 →</button></td>
                         </tr>
                       ))}
                     </Fragment>
