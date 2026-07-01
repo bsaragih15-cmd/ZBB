@@ -8,15 +8,12 @@ import { buildCopilotContext } from '../domain/ai/context'
 import { loadExternal, externalTotalRange, EXTERNAL_LABEL } from '../domain/external-benchmark'
 import { CopilotChat } from '../components/CopilotChat'
 
-export function LandingPage({ fleet, onDrill, cap: capProp, benchMode = 'absolute' }:
-  { fleet: Fleet; onDrill: (code: string) => void; cap?: number; onCap?: (c: number) => void; benchMode?: BenchmarkMode }) {
-  const cap = capProp ?? 0.5
-  const pct = Math.round(cap * 100)
-
+export function LandingPage({ fleet, onDrill, benchMode = 'absolute' }:
+  { fleet: Fleet; onDrill: (code: string) => void; benchMode?: BenchmarkMode }) {
   const fx = fleet.fx_2026
   const assets = sortedAssets(fleet)
   const matrix = buildCockpitMatrix(fleet, benchMode)
-  const head = fleetBestStake(fleet, cap, benchMode)
+  const head = fleetBestStake(fleet, 1, benchMode) // full gap to best
   const external = loadExternal()
   const extRange = externalTotalRange(external)
   // value-at-stake to the external band, per cost line (conservative high target → deep low target)
@@ -44,8 +41,8 @@ export function LandingPage({ fleet, onDrill, cap: capProp, benchMode = 'absolut
         <div className="sec" style={{ marginBottom: 2 }}>01 · CROSS-ASSET · CONTROLLABLE O&amp;M EX-FUEL · 2026 BUDGET · ILLUSTRATIVE</div>
         <h1 className="hero">
           {NUMWORD[nAbove] ?? nAbove} of {assets.length} entities run above {bestCode}'s{' '}
-          <span className="tealnum">${bestKw.toFixed(0)}/kW-yr</span> best. Closing {pct}% of the gap frees{' '}
-          <span className="num">Rp {rpBn(head.tot)} Bn</span>.
+          <span className="tealnum">${bestKw.toFixed(0)}/kW-yr</span> best —{' '}
+          <span className="num">Rp {rpBn(head.tot)} Bn</span> of gap to close.
         </h1>
         <p className="subline">
           Controllable O&amp;M ex-fuel, 2026 budget, real gas-CCGT assets (<b>Rp {rpBn(total)} Bn</b> total),
@@ -104,7 +101,7 @@ export function LandingPage({ fleet, onDrill, cap: capProp, benchMode = 'absolut
                       return <td key={a.code} style={{ background: bg, color: fg, fontWeight: c.is_best ? 700 : 500 }}>${c.usd.toFixed(1)}</td>
                     })}
                     {(() => { const e = external[row.block]; return (
-                      <td title={e?.source} className="mono" style={{ color: 'var(--blue)', background: 'rgba(94,124,138,0.10)', fontSize: 11 }}>
+                      <td title={e?.source} style={{ color: 'var(--blue)', background: 'rgba(94,124,138,0.10)' }}>
                         {e ? `$${e.low.toFixed(1)}–${e.high.toFixed(1)}` : '—'}</td>
                     ) })()}
                     {(() => { const e = external[row.block]
@@ -116,7 +113,7 @@ export function LandingPage({ fleet, onDrill, cap: capProp, benchMode = 'absolut
                 <tr className="total">
                   <td className="l">Total controllable</td>
                   {assets.map((a) => <td key={a.code}>${a.usd_per_kw_yr.toFixed(1)}</td>)}
-                  <td className="mono" style={{ color: 'var(--blue)', fontSize: 11 }}>${extRange.low.toFixed(0)}–${extRange.high.toFixed(0)}</td>
+                  <td style={{ color: 'var(--blue)' }}>${extRange.low.toFixed(0)}–${extRange.high.toFixed(0)}</td>
                   <td style={{ color: 'var(--amber)', fontWeight: 700 }}>{rpBn(bandTotals.lo)}–{rpBn(bandTotals.hi)}</td>
                 </tr>
               </tbody>
@@ -132,7 +129,7 @@ export function LandingPage({ fleet, onDrill, cap: capProp, benchMode = 'absolut
           <span className="pill teal" style={{ marginLeft: 'auto' }}>fleet view</span></div>
         <div className="pbody">
           <div className="quote">
-            At {pct}% capture the fleet frees <b style={{ color: 'var(--gold)' }}>Rp {rpBn(head.tot)} Bn</b> by
+            The fleet carries <b style={{ color: 'var(--gold)' }}>Rp {rpBn(head.tot)} Bn</b> of gap to best —
             bringing every plant to {bestCode}'s ${bestKw.toFixed(0)}/kW-yr. <b>{worst.code}</b> carries the
             largest gap (Rp {rpBn(head.by[worst.code] ?? 0)} Bn). The money concentrates in three cost lines below.
           </div>
@@ -151,7 +148,7 @@ export function LandingPage({ fleet, onDrill, cap: capProp, benchMode = 'absolut
           </div>
 
           <CopilotChat
-            context={buildCopilotContext(fleet, { cap, screen: 'cross-asset cockpit' })}
+            context={buildCopilotContext(fleet, { cap: 1, screen: 'cross-asset cockpit' })}
             suggestions={[
               `Why does ${worst.code} carry the largest gap?`,
               `Draft a challenge memo for ${topLines[0]?.block}`,
