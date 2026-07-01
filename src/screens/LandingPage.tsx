@@ -16,17 +16,22 @@ export function LandingPage({ fleet, onDrill, benchMode = 'absolute' }:
   const head = fleetBestStake(fleet, 1, benchMode) // full gap to best
   const external = loadExternal()
   const extRange = externalTotalRange(external)
-  // value-at-stake to the external band, per cost line (conservative high target → deep low target)
-  const bandStake = (row: (typeof matrix)[number], target: number) =>
+  // value-at-stake per cost line: the fleet's asset-level gap-to-best, decomposed across cost
+  // lines by each line's share of the asset's spend, ranged like-for-like → absolute. Sums to the
+  // headline gap-to-best (36.6 Bn absolute), matching the title.
+  const gapAbs = fleetBestStake(fleet, 1, 'absolute')
+  const gapNorm = fleetBestStake(fleet, 1, 'normalized')
+  const lineStake = (block: string, gapBy: Record<string, number>) =>
     assets.reduce((s, a) => {
-      const c = row.cells.find((x) => x.code === a.code)
-      const u = c && !c.is_outlier ? c.usd : 0
-      return s + Math.max(0, u - target) * a.mw * 1000 * fx
+      const c = matrix.find((m) => m.block === block)?.cells.find((x) => x.code === a.code)
+      const share = a.usd_per_kw_yr > 0 && c ? c.usd / a.usd_per_kw_yr : 0
+      return s + (gapBy[a.code] ?? 0) * share
     }, 0)
-  const bandTotals = matrix.reduce((acc, row) => {
-    const e = external[row.block]; if (!e) return acc
-    acc.lo += bandStake(row, e.high); acc.hi += bandStake(row, e.low); return acc
-  }, { lo: 0, hi: 0 })
+  const gapRange = (block: string) => {
+    const n = lineStake(block, gapNorm.by), a = lineStake(block, gapAbs.by)
+    return { lo: Math.min(n, a), hi: Math.max(n, a) }
+  }
+  const gapTotals = { lo: Math.min(gapNorm.tot, gapAbs.tot), hi: Math.max(gapNorm.tot, gapAbs.tot) }
   const total = fleetTotal(fleet)
   const bestKw = fleetBestKw(fleet)
   const bestCode = fleetBestCode(fleet)
@@ -84,7 +89,7 @@ export function LandingPage({ fleet, onDrill, benchMode = 'absolute' }:
                       <div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>${a.usd_per_kw_yr.toFixed(0)}/kW</div></th>
                   ))}
                   <th title={EXTERNAL_LABEL} style={{ color: 'var(--blue)' }}>External<div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>$/kW · mkt band</div></th>
-                  <th title="Value-at-stake to the external band, per line: conservative (to the high target) → deep (to the low target)">Value at stake<div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>Rp Bn · to band</div></th>
+                  <th title="Value-at-stake per line = gap-to-best, ranged like-for-like (conservative) → absolute (raw)">Value at stake<div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>Rp Bn · gap to best</div></th>
                 </tr>
               </thead>
               <tbody>
@@ -104,9 +109,8 @@ export function LandingPage({ fleet, onDrill, benchMode = 'absolute' }:
                       <td title={e?.source} style={{ color: 'var(--blue)', background: 'rgba(94,124,138,0.10)' }}>
                         {e ? `$${e.low.toFixed(1)}–${e.high.toFixed(1)}` : '—'}</td>
                     ) })()}
-                    {(() => { const e = external[row.block]
-                      if (!e) return <td style={{ color: 'var(--muted-2)' }}>—</td>
-                      return <td style={{ color: 'var(--amber)', fontWeight: 500 }}>{rpBn(bandStake(row, e.high))}–{rpBn(bandStake(row, e.low))}</td>
+                    {(() => { const g = gapRange(row.block)
+                      return <td style={{ color: 'var(--amber)', fontWeight: 500 }}>{rpBn(g.lo)}–{rpBn(g.hi)}</td>
                     })()}
                   </tr>
                 ))}
@@ -114,7 +118,7 @@ export function LandingPage({ fleet, onDrill, benchMode = 'absolute' }:
                   <td className="l">Total controllable</td>
                   {assets.map((a) => <td key={a.code}>${a.usd_per_kw_yr.toFixed(1)}</td>)}
                   <td style={{ color: 'var(--blue)' }}>${extRange.low.toFixed(0)}–${extRange.high.toFixed(0)}</td>
-                  <td style={{ color: 'var(--amber)', fontWeight: 700 }}>{rpBn(bandTotals.lo)}–{rpBn(bandTotals.hi)}</td>
+                  <td style={{ color: 'var(--amber)', fontWeight: 700 }}>{rpBn(gapTotals.lo)}–{rpBn(gapTotals.hi)}</td>
                 </tr>
               </tbody>
             </table>
