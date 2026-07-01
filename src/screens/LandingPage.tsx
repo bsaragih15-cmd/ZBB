@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { Fleet } from '../domain/types'
 import type { BenchmarkMode } from '../domain/cockpit-model'
 import {
@@ -6,15 +5,12 @@ import {
   fleetBestStake, tone, dotColor, NUMWORD,
 } from '../domain/cockpit-model'
 import { buildCopilotContext } from '../domain/ai/context'
-import { loadExternal, externalTotalRange, externalStakeRange, EXTERNAL_LABEL } from '../domain/external-benchmark'
-import { ownerFor } from '../domain/owners'
+import { loadExternal, externalTotalRange, EXTERNAL_LABEL } from '../domain/external-benchmark'
 import { CopilotChat } from '../components/CopilotChat'
 
-export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = 'absolute' }:
+export function LandingPage({ fleet, onDrill, cap: capProp, benchMode = 'absolute' }:
   { fleet: Fleet; onDrill: (code: string) => void; cap?: number; onCap?: (c: number) => void; benchMode?: BenchmarkMode }) {
-  const [capLocal, setCapLocal] = useState(0.5)
-  const cap = capProp ?? capLocal
-  const setCap = onCap ?? setCapLocal
+  const cap = capProp ?? 0.5
   const pct = Math.round(cap * 100)
 
   const fx = fleet.fx_2026
@@ -23,8 +19,17 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
   const head = fleetBestStake(fleet, cap, benchMode)
   const external = loadExternal()
   const extRange = externalTotalRange(external)
-  const extStake = externalStakeRange(fleet, external, cap)
-  const stretch = matrix.reduce((s, r) => s + r.total_gap_idr * cap, 0)
+  // value-at-stake to the external band, per cost line (conservative high target → deep low target)
+  const bandStake = (row: (typeof matrix)[number], target: number) =>
+    assets.reduce((s, a) => {
+      const c = row.cells.find((x) => x.code === a.code)
+      const u = c && !c.is_outlier ? c.usd : 0
+      return s + Math.max(0, u - target) * a.mw * 1000 * fx
+    }, 0)
+  const bandTotals = matrix.reduce((acc, row) => {
+    const e = external[row.block]; if (!e) return acc
+    acc.lo += bandStake(row, e.high); acc.hi += bandStake(row, e.low); return acc
+  }, { lo: 0, hi: 0 })
   const total = fleetTotal(fleet)
   const bestKw = fleetBestKw(fleet)
   const bestCode = fleetBestCode(fleet)
@@ -68,22 +73,6 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
           })}
         </div>
 
-        {/* dial */}
-        <div className="panel" style={{ marginBottom: 16 }}>
-          <div className="pbody dial">
-            <div className="sl">
-              <div className="top"><span className="lbl">dial · capture share of the gap to best</span>
-                <span className="mono" style={{ color: 'var(--teal-bright)', fontWeight: 700 }}>{pct}%</span></div>
-              <input type="range" min={0} max={100} value={pct}
-                onChange={(e) => setCap(Number(e.target.value) / 100)} />
-            </div>
-            <div className="stake real"><div className="v">Rp {rpBn(head.tot)} Bn</div>
-              <div className="n">internal · match the best plant ({bestCode})</div></div>
-            <div className="stake stretch"><div className="v" style={{ color: 'var(--blue)' }}>Rp {rpBn(extStake.minTot)}–{rpBn(extStake.maxTot)} Bn</div>
-              <div className="n" title={EXTERNAL_LABEL}>external · to the market frontier (${extRange.low.toFixed(0)}–${extRange.high.toFixed(0)}/kW)</div></div>
-          </div>
-        </div>
-
         {/* heatmap */}
         <div className="panel">
           <div className="phead"><span className="sec">02</span>
@@ -98,15 +87,13 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
                       <div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>${a.usd_per_kw_yr.toFixed(0)}/kW</div></th>
                   ))}
                   <th title={EXTERNAL_LABEL} style={{ color: 'var(--blue)' }}>External<div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>$/kW · mkt band</div></th>
-                  <th>Stretch<div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>Rp Bn</div></th>
+                  <th title="Value-at-stake to the external band, per line: conservative (to the high target) → deep (to the low target)">Value at stake<div className="mono" style={{ color: 'var(--muted-2)', fontWeight: 400 }}>Rp Bn · to band</div></th>
                 </tr>
               </thead>
               <tbody>
                 {matrix.map((row) => (
                   <tr key={row.block} className="clickable" onClick={() => onDrill(row.cells.find((c) => !c.is_best && c.gap_idr > 0)?.code ?? worst.code)}>
-                    <td className="l">{row.block}{row.semi && <span className="semi">semi-committed</span>}
-                      <div className="mono" style={{ fontSize: 9.5, color: 'var(--muted-2)', fontWeight: 400, marginTop: 2 }}
-                        title={ownerFor(row.block).role}>◷ {ownerFor(row.block).name}</div></td>
+                    <td className="l">{row.block}{row.semi && <span className="semi">semi-committed</span>}</td>
                     {assets.map((a) => {
                       const c = row.cells.find((x) => x.code === a.code)!
                       if (c.is_outlier) {
@@ -120,14 +107,17 @@ export function LandingPage({ fleet, onDrill, cap: capProp, onCap, benchMode = '
                       <td title={e?.source} className="mono" style={{ color: 'var(--blue)', background: 'rgba(94,124,138,0.10)', fontSize: 11 }}>
                         {e ? `$${e.low.toFixed(1)}–${e.high.toFixed(1)}` : '—'}</td>
                     ) })()}
-                    <td style={{ color: 'var(--muted)' }}>{(row.total_gap_idr * cap / 1e9).toFixed(1)}</td>
+                    {(() => { const e = external[row.block]
+                      if (!e) return <td style={{ color: 'var(--muted-2)' }}>—</td>
+                      return <td style={{ color: 'var(--amber)', fontWeight: 500 }}>{rpBn(bandStake(row, e.high))}–{rpBn(bandStake(row, e.low))}</td>
+                    })()}
                   </tr>
                 ))}
                 <tr className="total">
                   <td className="l">Total controllable</td>
                   {assets.map((a) => <td key={a.code}>${a.usd_per_kw_yr.toFixed(1)}</td>)}
                   <td className="mono" style={{ color: 'var(--blue)', fontSize: 11 }}>${extRange.low.toFixed(0)}–${extRange.high.toFixed(0)}</td>
-                  <td style={{ color: 'var(--amber)' }}>{rpBn(stretch)}</td>
+                  <td style={{ color: 'var(--amber)', fontWeight: 700 }}>{rpBn(bandTotals.lo)}–{rpBn(bandTotals.hi)}</td>
                 </tr>
               </tbody>
             </table>
